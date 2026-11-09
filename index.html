@@ -1,0 +1,1520 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Snowflake architecture — Visual explainer</title>
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@fontsource/ibm-plex-sans@5/400.css">
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@fontsource/ibm-plex-sans@5/500.css">
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@fontsource/jetbrains-mono@5/400.css">
+<style>
+  :root {
+    --bg-primary: #ffffff; --bg-secondary: #f5f5f0; --bg-tertiary: #eceae3;
+    --text-primary: #1a1a1a; --text-secondary: #73726c; --text-tertiary: #9c9a92;
+    --border-primary: rgba(0,0,0,0.4); --border-secondary: rgba(0,0,0,0.3); --border-tertiary: rgba(0,0,0,0.15);
+    --font-sans: "IBM Plex Sans", sans-serif; --font-mono: "JetBrains Mono", monospace;
+    --radius-md: 8px; --radius-lg: 12px;
+    --purple-f:#EEEDFE; --purple-s:#534AB7; --purple-t1:#3C3489; --purple-t2:#534AB7; --purple-in:#CECBF6;
+    --teal-f:#E1F5EE; --teal-s:#0F6E56; --teal-t1:#085041; --teal-t2:#0F6E56; --teal-in:#9FE1CB;
+    --coral-f:#FAECE7; --coral-s:#993C1D; --coral-t1:#712B13; --coral-t2:#993C1D; --coral-in:#F5C4B3;
+    --gray-f:#F1EFE8; --gray-s:#5F5E5A; --gray-t1:#444441; --gray-t2:#5F5E5A; --gray-in:#D3D1C7;
+    --amber-f:#FAEEDA; --amber-s:#854F0B; --amber-t1:#633806; --amber-t2:#854F0B; --amber-in:#FAC775;
+    --green-f:#EAF3DE; --green-t:#27500A;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root {
+      --bg-primary: #1a1a18; --bg-secondary: #242422; --bg-tertiary: #2c2c2a;
+      --text-primary: #e8e6de; --text-secondary: #9c9a92; --text-tertiary: #73726c;
+      --border-primary: rgba(255,255,255,0.4); --border-secondary: rgba(255,255,255,0.3); --border-tertiary: rgba(255,255,255,0.15);
+      --purple-f:#3C3489; --purple-s:#AFA9EC; --purple-t1:#EEEDFE; --purple-t2:#CECBF6; --purple-in:#26215C;
+      --teal-f:#085041; --teal-s:#5DCAA5; --teal-t1:#E1F5EE; --teal-t2:#9FE1CB; --teal-in:#04342C;
+      --coral-f:#712B13; --coral-s:#F0997B; --coral-t1:#FAECE7; --coral-t2:#F5C4B3; --coral-in:#4A1B0C;
+      --gray-f:#444441; --gray-s:#B4B2A9; --gray-t1:#F1EFE8; --gray-t2:#D3D1C7; --gray-in:#2C2C2A;
+      --amber-f:#633806; --amber-s:#EF9F27; --amber-t1:#FAEEDA; --amber-t2:#FAC775; --amber-in:#412402;
+      --green-f:#27500A; --green-t:#EAF3DE;
+    }
+  }
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  body { font-family: var(--font-sans); background: var(--bg-primary); color: var(--text-primary); padding: 2rem 1.25rem; max-width: 760px; margin: 0 auto; font-size: 15px; line-height: 1.7; }
+  h1 { font-size: 22px; font-weight: 500; } h2 { font-size: 18px; font-weight: 500; margin-bottom: 4px; } h3 { font-size: 16px; font-weight: 500; }
+  .sub { color: var(--text-secondary); font-size: 14px; margin-bottom: 1.25rem; }
+  .tabs { display: flex; flex-wrap: wrap; gap: 6px; margin-bottom: 1.25rem; }
+  .tabs button, .btn { font: inherit; font-size: 13px; padding: 6px 12px; border-radius: var(--radius-md); border: 0.5px solid var(--border-secondary); background: var(--bg-primary); color: var(--text-primary); cursor: pointer; }
+  .tabs button.on { background: var(--bg-tertiary); border-color: var(--border-primary); font-weight: 500; }
+  .btn:hover, .tabs button:hover { background: var(--bg-secondary); }
+  .view { display: none; } .view.on { display: block; }
+  svg { width: 100%; height: auto; display: block; }
+  .t { font-family: var(--font-sans); font-size: 14px; fill: var(--text-primary); }
+  .ts { font-family: var(--font-sans); font-size: 12px; fill: var(--text-secondary); }
+  .th { font-family: var(--font-sans); font-size: 14px; font-weight: 500; fill: var(--text-primary); }
+  .arr { stroke: var(--text-tertiary); stroke-width: 1; fill: none; }
+  .c-purple { --f:var(--purple-f); --s:var(--purple-s); --t1:var(--purple-t1); --t2:var(--purple-t2); --in:var(--purple-in); }
+  .c-teal { --f:var(--teal-f); --s:var(--teal-s); --t1:var(--teal-t1); --t2:var(--teal-t2); --in:var(--teal-in); }
+  .c-coral { --f:var(--coral-f); --s:var(--coral-s); --t1:var(--coral-t1); --t2:var(--coral-t2); --in:var(--coral-in); }
+  .c-gray { --f:var(--gray-f); --s:var(--gray-s); --t1:var(--gray-t1); --t2:var(--gray-t2); --in:var(--gray-in); }
+  .c-amber { --f:var(--amber-f); --s:var(--amber-s); --t1:var(--amber-t1); --t2:var(--amber-t2); --in:var(--amber-in); }
+  .box { fill: var(--f); stroke: var(--s); stroke-width: 0.5; }
+  .inner { fill: var(--in); stroke: var(--s); stroke-width: 0.5; }
+  .c-purple .th, .c-teal .th, .c-coral .th, .c-gray .th, .c-amber .th { fill: var(--t1); }
+  .c-purple .ts, .c-teal .ts, .c-coral .ts, .c-gray .ts, .c-amber .ts { fill: var(--t2); }
+  .layer { cursor: pointer; } .layer:hover .box { stroke-width: 1.5; } .layer.sel .box { stroke-width: 2; }
+  .panel { background: var(--bg-secondary); border: 0.5px solid var(--border-tertiary); border-radius: var(--radius-lg); padding: 14px 18px; margin-top: 14px; }
+  .panel ul { padding-left: 18px; } .panel li { margin: 2px 0; }
+  .tag { display: inline-block; font-size: 12px; padding: 1px 8px; border-radius: 999px; background: var(--bg-tertiary); color: var(--text-secondary); margin-bottom: 6px; }
+  .legend { display: flex; gap: 14px; flex-wrap: wrap; font-size: 12px; color: var(--text-secondary); margin-top: 8px; }
+  .legend span::before { content: ""; display: inline-block; width: 10px; height: 10px; border-radius: 3px; margin-right: 5px; vertical-align: -1px; background: var(--c); }
+  .row { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; margin-top: 12px; font-size: 13px; color: var(--text-secondary); }
+  .dots { display: flex; gap: 6px; } .dots span { width: 8px; height: 8px; border-radius: 50%; background: var(--border-tertiary); } .dots span.on { background: var(--text-primary); }
+  code, .mono { font-family: var(--font-mono); font-size: 12.5px; background: var(--bg-tertiary); padding: 1px 6px; border-radius: 4px; }
+  .grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(160px, 1fr)); gap: 10px; margin-top: 12px; }
+  .card { border: 0.5px solid var(--border-tertiary); border-radius: var(--radius-lg); padding: 12px; background: var(--bg-primary); font-size: 13px; transition: border-color .2s, background .2s; }
+  .card h3 { font-size: 14px; margin-bottom: 4px; } .card p { color: var(--text-secondary); line-height: 1.5; }
+  .card.hit { border: 1.5px solid var(--teal-s); background: var(--teal-f); } .card.hit h3, .card.hit p { color: var(--teal-t1); }
+  .card.slow { border: 1.5px solid var(--amber-s); background: var(--amber-f); } .card.slow h3, .card.slow p { color: var(--amber-t1); }
+  .chip { font-size: 12px; padding: 2px 9px; border-radius: 999px; background: var(--bg-tertiary); color: var(--text-secondary); }
+  .chip.good { background: var(--green-f); color: var(--green-t); } .chip.warn { background: var(--amber-f); color: var(--amber-t1); }
+  .log { margin-top: 10px; font-size: 13px; min-height: 48px; }
+  .pill-g rect { fill: var(--green-f); } .pill-g text { fill: var(--green-t); }
+  .pill-a rect { fill: var(--amber-f); } .pill-a text { fill: var(--amber-t1); }
+  .pill-n rect { fill: var(--gray-in); } .pill-n text { fill: var(--gray-t1); }
+  table { width: 100%; border-collapse: collapse; font-size: 13px; margin-top: 10px; }
+  td, th { border-bottom: 0.5px solid var(--border-tertiary); padding: 7px 8px; text-align: left; vertical-align: top; }
+  th { font-weight: 500; color: var(--text-secondary); }
+  .flash { cursor: pointer; min-height: 96px; }
+  .flash .a { display: none; margin-top: 6px; color: var(--teal-t1); }
+  .flash.open { background: var(--teal-f); border-color: var(--teal-s); } .flash.open .a { display: block; }
+  .flash .q { font-weight: 500; } .flash .hint { font-size: 11px; color: var(--text-tertiary); }
+  .flash.open .hint { display: none; }
+  input[type=range] { flex: 1; min-width: 160px; }
+  select { font: inherit; font-size: 13px; padding: 3px 6px; border-radius: var(--radius-md); border: 0.5px solid var(--border-secondary); background: var(--bg-primary); color: var(--text-primary); }
+  .btn.on { background: var(--bg-tertiary); border-color: var(--border-primary); font-weight: 500; }
+  .subtabs button { font-size: 12.5px; padding: 5px 10px; }
+  .topicbar { display: flex; flex-wrap: wrap; gap: 6px; margin: -4px 0 6px; }
+  .topicbar .btn { font-size: 12.5px; padding: 4px 10px; border-radius: 999px; }
+  .dotfix { display: inline-block; width: 6px; height: 6px; border-radius: 50%; background: var(--amber-s); vertical-align: 2px; margin-left: 4px; }
+  .vis { margin: 12px 0 4px; }
+  .vis .panel { margin-top: 8px; }
+  pre.code { font-family: var(--font-mono); font-size: 12.5px; background: var(--bg-tertiary); padding: 10px 12px; border-radius: var(--radius-md); overflow-x: auto; white-space: pre; line-height: 1.55; margin: 8px 0; }
+  .say { background: var(--teal-f); color: var(--teal-t1); border-left: 3px solid var(--teal-s); padding: 10px 14px; border-radius: 6px; margin-top: 12px; font-size: 14px; }
+  .fix { background: var(--amber-f); color: var(--amber-t1); border-left: 3px solid var(--amber-s); padding: 10px 14px; border-radius: 6px; margin-top: 10px; font-size: 14px; }
+  .cols2 { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+  @media (max-width: 640px) { .cols2 { grid-template-columns: 1fr; } }
+  .mini { font-size: 12px; color: var(--text-secondary); margin-top: 6px; }
+  tr.sel td { background: var(--teal-f); color: var(--teal-t1); }
+  td.strike { text-decoration: line-through; color: var(--text-tertiary); }
+  .star { color: var(--amber-s); font-size: 12px; }
+  #quiz .q { font-size: 16px; font-weight: 500; margin: 6px 0 10px; }
+  #quiz .ans { background: var(--teal-f); color: var(--teal-t1); padding: 10px 12px; border-radius: var(--radius-md); margin-bottom: 10px; }
+  .filters { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 8px; }
+  .filters .btn { font-size: 12px; padding: 3px 10px; border-radius: 999px; }
+  @media (prefers-reduced-motion: no-preference) {
+    .view.on { animation: fade .3s ease; }
+    @keyframes fade { from { opacity: 0; transform: translateY(4px); } to { opacity: 1; transform: none; } }
+  }
+</style>
+</head>
+<body>
+<svg width="0" height="0" style="position:absolute;width:0;height:0;overflow:hidden;pointer-events:none" aria-hidden="true">
+  <defs>
+    <marker id="arr2" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse">
+      <path d="M2 1L8 5L2 9" fill="none" stroke="context-stroke" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
+    </marker>
+  </defs>
+</svg>
+<h1>Snowflake architecture, made simple</h1>
+<p class="sub">Think of Snowflake as a restaurant: a manager, chefs, and one shared pantry.</p>
+
+<div class="tabs" id="tabs">
+  <button class="on" data-v="v1">1 · Three layers</button>
+  <button data-v="v2">2 · Life of a query</button>
+  <button data-v="v3">3 · Storage vs compute</button>
+  <button data-v="v4">4 · Caches</button>
+  <button data-v="v5">5 · Features</button>
+  <button data-v="v7">6 · Interview topics</button>
+  <button data-v="v6">7 · Cheat sheet + flashcards</button>
+  <button data-v="v8">8 · SQL cheat sheet</button>
+</div>
+
+<section class="view on" id="v1">
+  <h2>The three layers</h2>
+  <p class="sub">Click a layer to see what it does.</p>
+  <svg id="layersSvg" viewBox="0 0 680 492" xmlns="http://www.w3.org/2000/svg"></svg>
+  <div class="legend">
+    <span style="--c:var(--purple-s)">Cloud services (manager)</span>
+    <span style="--c:var(--teal-s)">Compute (chefs)</span>
+    <span style="--c:var(--coral-s)">Storage (pantry)</span>
+  </div>
+  <div class="panel" id="layerInfo"></div>
+</section>
+
+<section class="view" id="v2">
+  <h2>Life of a query</h2>
+  <p class="sub">Step through what happens when you run <code>SELECT region, SUM(sales) FROM orders GROUP BY region;</code></p>
+  <svg id="querySvg" viewBox="0 0 680 300" xmlns="http://www.w3.org/2000/svg"></svg>
+  <div class="row">
+    <button class="btn" id="qBack">Back</button>
+    <button class="btn" id="qNext">Next</button>
+    <div class="dots" id="qDots"></div>
+  </div>
+  <div class="panel" id="queryInfo"></div>
+</section>
+
+<section class="view" id="v3">
+  <h2>Separation of storage and compute</h2>
+  <p class="sub">Switch views and try the scenarios.</p>
+  <div class="row" style="margin-top:0">
+    <button class="btn" id="archOld">Traditional warehouse</button>
+    <button class="btn" id="archNew">Snowflake</button>
+  </div>
+  <svg id="archSvg" viewBox="0 0 680 380" xmlns="http://www.w3.org/2000/svg" style="margin-top:10px"></svg>
+  <div class="row">
+    <label><input type="checkbox" id="etlLoad"> ETL team runs a heavy load</label>
+    <label id="suspendWrap"><input type="checkbox" id="biSuspend"> Suspend the BI warehouse</label>
+  </div>
+  <div class="row" id="sizeRow">
+    <label>ETL warehouse size</label>
+    <input type="range" id="whSize" min="0" max="9" step="1" value="3">
+    <span id="whSizeVal" class="mono"></span>
+  </div>
+  <div class="panel" id="archInfo"></div>
+</section>
+
+<section class="view" id="v4">
+  <h2>The three caches</h2>
+  <p class="sub">Press the buttons and watch which cache answers the query.</p>
+  <div class="grid">
+    <div class="card" id="cResult"><h3>Result cache</h3><p>Lives in cloud services. Same query and unchanged data: reused for 24 hours. No warehouse needed.</p></div>
+    <div class="card" id="cLocal"><h3>Local disk cache</h3><p>Lives in the warehouse SSD. Speeds up repeat reads. Lost when it suspends.</p></div>
+    <div class="card" id="cMeta"><h3>Metadata cache</h3><p>Row counts, min and max per micro-partition. COUNT(*), MIN, MAX need no warehouse.</p></div>
+    <div class="card" id="cRemote"><h3>Remote storage</h3><p>No cache helped. Data fetched from cloud storage. Slowest path.</p></div>
+  </div>
+  <div class="row">
+    <button class="btn" id="bRun">Run sales query</button>
+    <button class="btn" id="bCount">Run SELECT COUNT(*)</button>
+    <button class="btn" id="bInsert">Insert new rows</button>
+    <button class="btn" id="bSuspend">Suspend warehouse</button>
+    <button class="btn" id="bReset">Reset</button>
+  </div>
+  <div class="row">
+    <span class="chip" id="sWh"></span><span class="chip" id="sSsd"></span><span class="chip" id="sRes"></span>
+  </div>
+  <div class="panel log" id="cacheLog">Press <b>Run sales query</b> to start.</div>
+</section>
+
+<section class="view" id="v5">
+  <h2>Features the architecture makes possible</h2>
+  <p class="sub">Micro-partitions are never edited in place. A change writes new ones, and metadata remembers the old ones. That single idea powers all four features.</p>
+  <h3>Time Travel and Fail-safe</h3>
+  <svg id="ttSvg" viewBox="0 0 680 150" xmlns="http://www.w3.org/2000/svg"></svg>
+  <div class="row">
+    <label>Retention</label>
+    <select id="ttRet"><option value="1">1 day (default)</option><option value="90">90 days (Enterprise max)</option></select>
+    <label>Days since the table was dropped</label>
+    <input type="range" id="ttDays" min="0" max="18" step="1" value="0">
+    <span id="ttDaysVal" class="mono"></span>
+  </div>
+  <div class="panel" id="ttInfo"></div>
+  <h3 style="margin-top:22px">Zero-copy cloning and secure data sharing</h3>
+  <svg viewBox="0 0 680 230" xmlns="http://www.w3.org/2000/svg">
+    <text class="th" x="180" y="30" text-anchor="middle">Zero-copy clone</text>
+    <text class="th" x="510" y="30" text-anchor="middle">Secure data sharing</text>
+    <g class="c-teal">
+      <rect class="box" x="50" y="48" width="110" height="44" rx="8"/>
+      <text class="th" x="105" y="70" text-anchor="middle" dominant-baseline="central">orders</text>
+      <rect class="box" x="190" y="48" width="120" height="44" rx="8"/>
+      <text class="th" x="250" y="70" text-anchor="middle" dominant-baseline="central">orders_dev</text>
+      <rect class="box" x="370" y="48" width="110" height="44" rx="8"/>
+      <text class="th" x="425" y="70" text-anchor="middle" dominant-baseline="central">Provider</text>
+      <rect class="box" x="510" y="48" width="120" height="44" rx="8"/>
+      <text class="th" x="570" y="70" text-anchor="middle" dominant-baseline="central">Consumer</text>
+    </g>
+    <line class="arr" x1="105" y1="92" x2="165" y2="136" marker-end="url(#arr2)"/>
+    <line class="arr" x1="250" y1="92" x2="190" y2="136" marker-end="url(#arr2)"/>
+    <line class="arr" x1="425" y1="92" x2="500" y2="136" marker-end="url(#arr2)"/>
+    <line class="arr" x1="570" y1="92" x2="525" y2="136" marker-end="url(#arr2)"/>
+    <g class="c-coral" id="cloneSquares"></g>
+    <text class="ts" x="180" y="196" text-anchor="middle">Copies metadata only<tspan x="180" dy="1.3em">pays storage only for changes</tspan></text>
+    <text class="ts" x="510" y="196" text-anchor="middle">No data is copied<tspan x="510" dy="1.3em">consumer uses its own warehouse</tspan></text>
+  </svg>
+</section>
+
+<section class="view" id="v7">
+  <h2>Interview topics from the article</h2>
+  <p class="sub">Every article question that tabs 1–5 don't already explain. Pick a group, then a topic. An amber dot means the article's answer is wrong or out of date, and the topic shows the correct version.</p>
+  <div class="row" style="margin:0 0 12px"><label>Jump to article question</label><select id="qJump"></select></div>
+  <div class="tabs subtabs" id="grpBar"></div>
+  <div class="topicbar" id="topicBar"></div>
+  <div id="topicPanel"></div>
+</section>
+
+<section class="view" id="v6">
+  <h2>Cheat sheet</h2>
+  <h3>Memory tricks</h3>
+  <table>
+    <tr><th>Remember</th><th>Means</th></tr>
+    <tr><td><b>Brain, muscle, pantry</b></td><td>Cloud services, compute (warehouses), storage</td></tr>
+    <tr><td><b>Scale up vs scale out</b></td><td>Up = bigger size for heavy queries. Out = more clusters for many users.</td></tr>
+    <tr><td><b>Caches: R, L, M</b></td><td>Result (24h, no warehouse), Local SSD (lost on suspend), Metadata (COUNT/MIN/MAX)</td></tr>
+    <tr><td><b>Suspend = no compute bill</b></td><td>Data stays safe in storage. Billing is per second, 60-second minimum.</td></tr>
+    <tr><td><b>Immutable micro-partitions</b></td><td>Enable pruning, Time Travel, Fail-safe, cloning, and sharing</td></tr>
+    <tr><td><b>Hybrid design</b></td><td>Shared-disk storage + shared-nothing (MPP) compute</td></tr>
+    <tr><td><b>Stage → COPY → table</b></td><td>PUT files into an internal stage (or point at a bucket), COPY INTO loads them. Snowpipe runs the COPY for you.</td></tr>
+    <tr><td><b>Fail-safe days 7 · 0 · 0</b></td><td>Permanent 7, transient 0, temporary 0. Only permanent tables get up to 90 days of Time Travel.</td></tr>
+    <tr><td><b>Stream = bookmark, task = alarm clock</b></td><td>A stream remembers what changed. A task runs SQL on a schedule, often reading the stream.</td></tr>
+    <tr><td><b>Prune before you pay</b></td><td>Check partitions scanned and spilling in Query Profile before buying a bigger warehouse.</td></tr>
+    <tr><td><b>Roles get privileges, users get roles</b></td><td>And you need USAGE on warehouse, database and schema before SELECT works.</td></tr>
+    <tr><td><b>Share = grants, not copies</b></td><td>Consumers read live data with their own warehouse. Only secure views can be shared.</td></tr>
+    <tr><td><b>Notify → suspend → suspend now</b></td><td>The three resource monitor actions</td></tr>
+    <tr><td><b>Editions S · E · B · V</b></td><td>Standard, Enterprise (scale + governance), Business Critical (compliance + failover), VPS (isolated)</td></tr>
+  </table>
+  <h3 style="margin-top:22px">Article answers to correct</h3>
+  <p class="sub">If an interviewer asks one of these, give the corrected answer.</p>
+  <div id="fixTable"></div>
+  <h3 style="margin-top:22px">Interview flashcards</h3>
+  <p class="sub">"Article traps" cards come first: the questions the article gets wrong. The quiz always asks them first too. Answer out loud, then click a card.</p>
+  <div class="filters" id="flashFilters"></div>
+  <div class="row">
+    <label><input type="checkbox" id="starOnly"> Most asked only</label>
+    <span class="chip" id="flashCount"></span>
+    <button class="btn" id="quizStart">Quiz me on these</button>
+  </div>
+  <div class="panel" id="quiz" style="display:none"></div>
+  <div class="grid" id="flash"></div>
+</section>
+
+
+<section class="view" id="v8">
+  <h2>SQL interview cheat sheet</h2>
+  <p class="sub">The most-asked SQL interview topics. Your own mistakes from our practice come first, so you don't repeat them in the interview.</p>
+
+  <h3>1 · Your mistakes from our practice</h3>
+  <p class="sub">Every slip from Questions 1–6, with the fix and the rule to remember.</p>
+  <div id="sqlMistakes"></div>
+
+  <h3 style="margin-top:22px">2 · Order of execution</h3>
+  <p class="sub">You write <code>SELECT</code> first, but the database runs it almost last. This one picture explains most "why doesn't this work?" questions.</p>
+  <div id="execOrder"></div>
+
+  <h3 style="margin-top:22px">3 · Joins: try each type</h3>
+  <p class="sub">The same customers and orders as Question 3, plus order 105 for a customer who doesn't exist. Pick a join.</p>
+  <div id="joinDemo"></div>
+
+  <h3 style="margin-top:22px">4 · ROW_NUMBER vs RANK vs DENSE_RANK</h3>
+  <p class="sub">The Question 1 salaries. Highlighted cells show where the three functions differ.</p>
+  <div id="rankDemo"></div>
+
+  <h3 style="margin-top:22px">5 · Pattern library</h3>
+  <p class="sub">Ready-to-use answers to the classic interview problems. Pick one.</p>
+  <div id="patDemo"></div>
+
+  <h3 style="margin-top:22px">6 · NULL traps</h3>
+  <div id="nullTraps"></div>
+
+  <h3 style="margin-top:22px">7 · SQL interview flashcards</h3>
+  <p class="sub">"Your mistakes" cards come first, and the quiz always asks them first. Answer out loud, then click.</p>
+  <div class="filters" id="sqlFilters"></div>
+  <div class="row">
+    <label><input type="checkbox" id="sqlStar"> Most asked only</label>
+    <span class="chip" id="sqlCount"></span>
+    <button class="btn" id="sqlQuizStart">Quiz me on these</button>
+  </div>
+  <div class="panel" id="sqlQuiz" style="display:none"></div>
+  <div class="grid" id="sqlFlash"></div>
+</section>
+
+<script>
+const NS = 'http://www.w3.org/2000/svg';
+
+function pills(x, y, labels) {
+  let out = '';
+  labels.forEach(l => {
+    const w = l.length * 7 + 20;
+    out += `<rect class="inner" x="${x}" y="${y}" width="${w}" height="24" rx="12"/>` +
+           `<text class="ts" x="${x + w / 2}" y="${y + 12}" text-anchor="middle" dominant-baseline="central">${l}</text>`;
+    x += w + 8;
+  });
+  return out;
+}
+function squares(x, y, n, size, gap) {
+  let out = '';
+  for (let i = 0; i < n; i++) out += `<rect class="inner" x="${x + i * (size + gap)}" y="${y}" width="${size}" height="${size}" rx="3"/>`;
+  return out;
+}
+function statusPill(x, y, text, kind) {
+  const w = text.length * 7 + 18;
+  return `<g class="pill-${kind}"><rect x="${x}" y="${y}" width="${w}" height="22" rx="11"/>` +
+         `<text class="ts" x="${x + w / 2}" y="${y + 11}" text-anchor="middle" dominant-baseline="central">${text}</text></g>`;
+}
+
+/* Tab switching */
+function showView(id) {
+  document.querySelectorAll('#tabs button').forEach(x => x.classList.toggle('on', x.dataset.v === id));
+  document.querySelectorAll('.view').forEach(v => v.classList.toggle('on', v.id === id));
+}
+document.querySelectorAll('#tabs button').forEach(b => b.addEventListener('click', () => showView(b.dataset.v)));
+
+/* View 1: layers */
+const LAYERS = [
+  { tag: 'Layer 1 · the manager', title: 'Cloud services: the brain',
+    items: ['<b>Authentication:</b> checks who you are (login, SSO, MFA)',
+            '<b>Access control:</b> checks your role has privileges on the table',
+            '<b>Metadata:</b> knows which micro-partitions exist and their min/max values',
+            '<b>Query optimiser:</b> builds the cheapest plan and decides what to skip (pruning)',
+            '<b>Result cache:</b> returns a repeated query instantly',
+            '<b>Transactions:</b> keeps reads and writes consistent',
+            'Runs all the time, managed by Snowflake. You only pay if it exceeds 10% of daily compute.'] },
+  { tag: 'Layer 2 · the chefs', title: 'Compute: virtual warehouses',
+    items: ['A <b>virtual warehouse</b> is a cluster of servers that runs your queries. It does not own any data.',
+            '<b>Sizes:</b> XS, S, M, L, XL up to 6XL. Each size up doubles the power and the credits per hour.',
+            '<b>Auto-suspend / auto-resume:</b> stops when idle, starts again when a query arrives',
+            '<b>Multi-cluster warehouse:</b> adds clusters automatically when many users queue up (Enterprise)',
+            '<b>Local SSD cache:</b> keeps recently read data for faster repeat reads',
+            'Many warehouses can run at the same time without slowing each other down.'] },
+  { tag: 'Layer 3 · the pantry', title: 'Storage: data stored once',
+    items: ['Data lives in cloud object storage: <b>AWS S3, Azure Blob, or Google Cloud Storage</b>',
+            'Stored <b>compressed and columnar</b>, so a query reads only the columns it needs',
+            'Split into <b>micro-partitions</b> of 50–500 MB (uncompressed), created automatically',
+            'Micro-partitions are <b>immutable</b>: changes write new ones instead of editing old ones',
+            '<b>Pruning:</b> min/max metadata lets Snowflake skip partitions that cannot match the WHERE',
+            'You pay a flat rate per TB stored per month, separate from compute.'] }
+];
+function drawLayers(sel) {
+  const svg = document.getElementById('layersSvg');
+  const g = (i, cls, body) => `<g class="layer ${cls}${sel === i ? ' sel' : ''}" data-i="${i}">${body}</g>`;
+  svg.innerHTML =
+    g(0, 'c-purple', `<rect class="box" x="40" y="40" width="600" height="96" rx="12"/>
+      <text class="th" x="60" y="64" dominant-baseline="central">Layer 1: Cloud services</text>
+      <text class="ts" x="60" y="84" dominant-baseline="central">The brain · restaurant manager</text>
+      ${pills(60, 100, ['Login', 'Roles', 'Metadata', 'Optimiser', 'Result cache', 'Transactions'])}`) +
+    `<line class="arr" x1="340" y1="138" x2="340" y2="172" marker-end="url(#arr2)"/>
+     <text class="ts" x="352" y="156" dominant-baseline="central">sends the plan down</text>` +
+    g(1, 'c-teal', `<rect class="box" x="40" y="176" width="600" height="124" rx="12"/>
+      <text class="th" x="60" y="200" dominant-baseline="central">Layer 2: Compute (virtual warehouses)</text>
+      <text class="ts" x="60" y="220" dominant-baseline="central">The muscle · the chefs</text>
+      <rect class="inner" x="60" y="238" width="170" height="48" rx="8"/>
+      <text class="th" x="145" y="254" text-anchor="middle" dominant-baseline="central">WH_ETL · L</text>
+      <text class="ts" x="145" y="272" text-anchor="middle" dominant-baseline="central">loads data</text>
+      <rect class="inner" x="250" y="238" width="170" height="48" rx="8"/>
+      <text class="th" x="335" y="254" text-anchor="middle" dominant-baseline="central">WH_BI · S</text>
+      <text class="ts" x="335" y="272" text-anchor="middle" dominant-baseline="central">dashboards</text>
+      <rect class="inner" x="440" y="238" width="170" height="48" rx="8"/>
+      <text class="th" x="525" y="254" text-anchor="middle" dominant-baseline="central">WH_DS · M</text>
+      <text class="ts" x="525" y="272" text-anchor="middle" dominant-baseline="central">data science</text>`) +
+    `<line class="arr" x1="340" y1="302" x2="340" y2="338" marker-end="url(#arr2)"/>
+     <text class="ts" x="352" y="320" dominant-baseline="central">reads only the data it needs</text>` +
+    g(2, 'c-coral', `<rect class="box" x="40" y="342" width="600" height="110" rx="12"/>
+      <text class="th" x="60" y="366" dominant-baseline="central">Layer 3: Storage</text>
+      <text class="ts" x="60" y="386" dominant-baseline="central">The pantry · micro-partitions in S3 / Azure Blob / GCS</text>
+      ${squares(60, 408, 16, 28, 6)}`);
+  svg.querySelectorAll('.layer').forEach(el => el.addEventListener('click', () => drawLayers(+el.dataset.i)));
+  const L = LAYERS[sel];
+  document.getElementById('layerInfo').innerHTML =
+    `<span class="tag">${L.tag}</span><h3>${L.title}</h3><ul>${L.items.map(i => `<li>${i}</li>`).join('')}</ul>`;
+}
+drawLayers(0);
+
+/* View 2: query stepper */
+const STEPS = [
+  { at: 0, title: '1. Log in and check permissions', body: 'Cloud services confirms who you are and that your role is allowed to read <code>orders</code>. No warehouse is used yet.' },
+  { at: 0, title: '2. Check the result cache', body: 'Has the exact same query run in the last 24 hours, with the data unchanged? If yes, the saved result comes back instantly and the journey ends here.' },
+  { at: 0, title: '3. Optimise and prune', body: 'The optimiser builds a plan. Using min/max metadata, it works out that only 12 of 500 micro-partitions can contain matching rows. The rest are skipped.' },
+  { at: 1, title: '4. Warehouse picks up the work', body: 'Your virtual warehouse auto-resumes if it was suspended. It first looks in its local SSD cache for any of the needed data.' },
+  { at: 2, title: '5. Read only what is needed', body: 'Anything not cached is fetched from cloud storage: only the 12 micro-partitions, and only the <code>region</code> and <code>sales</code> columns.' },
+  { at: 1, title: '6. Compute and return', body: 'The warehouse servers do the SUM and GROUP BY in parallel. The result goes back to you and is saved in the result cache for next time.' }
+];
+let step = 0;
+function drawQuery() {
+  const names = [['Cloud services', 'checks, plans, caches', 'c-purple'], ['Compute', 'runs the query', 'c-teal'], ['Storage', 'holds the data', 'c-coral']];
+  const s = STEPS[step];
+  let out = `<g class="c-gray"><rect class="box" x="40" y="122" width="110" height="56" rx="8"/>
+    <text class="th" x="95" y="140" text-anchor="middle" dominant-baseline="central">You</text>
+    <text class="ts" x="95" y="160" text-anchor="middle" dominant-baseline="central">run a query</text></g>`;
+  names.forEach((n, i) => {
+    const y = 40 + i * 84, active = s.at === i;
+    out += `<g class="${active ? n[2] : 'c-gray'}" opacity="${active ? 1 : 0.55}">
+      <rect class="box" x="230" y="${y}" width="410" height="56" rx="8" ${active ? 'stroke-width="2"' : ''}/>
+      <text class="th" x="250" y="${y + 19}" dominant-baseline="central">${n[0]}</text>
+      <text class="ts" x="250" y="${y + 38}" dominant-baseline="central">${n[1]}</text></g>`;
+  });
+  const ty = 40 + s.at * 84 + 28;
+  out += `<path class="arr" d="M150 150 L190 150 L190 ${ty} L226 ${ty}" marker-end="url(#arr2)" stroke-width="1.5"/>`;
+  out += `<text class="ts" x="630" y="286" text-anchor="end">Step ${step + 1} of ${STEPS.length}</text>`;
+  document.getElementById('querySvg').innerHTML = out;
+  document.getElementById('queryInfo').innerHTML = `<h3>${s.title}</h3><p>${s.body}</p>`;
+  document.getElementById('qDots').innerHTML = STEPS.map((_, i) => `<span class="${i === step ? 'on' : ''}"></span>`).join('');
+}
+document.getElementById('qNext').onclick = () => { step = (step + 1) % STEPS.length; drawQuery(); };
+document.getElementById('qBack').onclick = () => { step = (step - 1 + STEPS.length) % STEPS.length; drawQuery(); };
+drawQuery();
+
+/* View 3: storage vs compute */
+const SIZES = ['XS', 'S', 'M', 'L', 'XL', '2XL', '3XL', '4XL', '5XL', '6XL'];
+let arch = 'new';
+function drawArch() {
+  const etl = document.getElementById('etlLoad').checked;
+  const susp = document.getElementById('biSuspend').checked;
+  const si = +document.getElementById('whSize').value;
+  document.getElementById('whSizeVal').textContent = `${SIZES[si]} · ${2 ** si} credits/hour`;
+  document.getElementById('archOld').classList.toggle('on', arch === 'old');
+  document.getElementById('archNew').classList.toggle('on', arch === 'new');
+  document.getElementById('suspendWrap').style.display = arch === 'new' ? '' : 'none';
+  document.getElementById('sizeRow').style.display = arch === 'new' ? '' : 'none';
+  let out = "", info;
+  if (arch === 'old') {
+    ['ETL team', 'BI team', 'DS team'].forEach((t, i) => {
+      const x = 40 + i * 210;
+      out += `<g class="c-gray"><rect class="box" x="${x}" y="40" width="180" height="44" rx="8"/>
+        <text class="th" x="${x + 90}" y="62" text-anchor="middle" dominant-baseline="central">${t}</text></g>
+        <line class="arr" x1="${x + 90}" y1="84" x2="${x + 90}" y2="126" marker-end="url(#arr2)"/>`;
+    });
+    out += `<g class="${etl ? 'c-amber' : 'c-gray'}"><rect class="box" x="40" y="130" width="600" height="200" rx="12"/>
+      <text class="th" x="60" y="156" dominant-baseline="central">One shared cluster</text>
+      <text class="ts" x="60" y="176" dominant-baseline="central">CPU and disk are tied together on every server</text>`;
+    for (let i = 0; i < 4; i++) {
+      const x = 60 + i * 145;
+      out += `<rect class="inner" x="${x}" y="200" width="125" height="80" rx="8"/>
+        <text class="th" x="${x + 62}" y="226" text-anchor="middle" dominant-baseline="central">Server ${i + 1}</text>
+        <text class="ts" x="${x + 62}" y="248" text-anchor="middle" dominant-baseline="central">CPU + disk</text>`;
+    }
+    out += `</g>` + statusPill(60, 294, etl ? 'everyone slows down' : 'shared by all teams', etl ? 'a' : 'n');
+    info = etl
+      ? '<b>Problem:</b> ETL and BI fight over the same CPU. Dashboards slow down while the load runs.'
+      : '<b>Problem:</b> need more CPU? You must buy servers that also add disk, and the other way round. Every team shares the same machines.';
+  } else {
+    const whs = [
+      ['WH_ETL', SIZES[si], etl ? ['busy: heavy load', 'a'] : ['running', 'g']],
+      ['WH_BI', 'S', susp ? ['suspended', 'n'] : [etl ? 'still fast' : 'running', 'g']],
+      ['WH_DS', 'M', ['running', 'g']]
+    ];
+    whs.forEach((w, i) => {
+      const x = 40 + i * 210, off = w[2][1] === 'n';
+      out += `<g class="${off ? 'c-gray' : 'c-teal'}"${off ? ' opacity="0.6"' : ''}><rect class="box" x="${x}" y="40" width="180" height="96" rx="8"/>
+        <text class="th" x="${x + 16}" y="62" dominant-baseline="central">${w[0]}</text>
+        <text class="ts" x="${x + 16}" y="82" dominant-baseline="central">size ${w[1]}</text></g>
+        ${statusPill(x + 16, 100, w[2][0], w[2][1])}
+        <line class="arr" x1="${x + 90}" y1="136" x2="${x + 90}" y2="216" marker-end="url(#arr2)" ${off ? 'stroke-dasharray="4 4"' : ''}/>`;
+    });
+    out += `<g class="c-coral"><rect class="box" x="40" y="220" width="600" height="110" rx="12"/>
+      <text class="th" x="60" y="244" dominant-baseline="central">One copy of all data</text>
+      <text class="ts" x="60" y="264" dominant-baseline="central">Every warehouse reads the same tables</text>
+      ${squares(60, 284, 16, 28, 6)}</g>`;
+    const parts = [];
+    if (etl) parts.push('<b>Workload isolation:</b> only WH_ETL is busy. WH_BI has its own servers, so dashboards stay fast.');
+    if (susp) parts.push('<b>Suspended:</b> WH_BI costs nothing now, and the data is untouched because it lives in storage. The next query auto-resumes it.');
+    parts.push(`<b>Independent scaling:</b> resizing WH_ETL to ${SIZES[si]} changes nothing for the other teams or the data. Billed per second while running (60-second minimum).`);
+    info = parts.join('<br>');
+  }
+  document.getElementById('archSvg').innerHTML = out;
+  document.getElementById('archInfo').innerHTML = info;
+}
+document.getElementById('archOld').onclick = () => { arch = 'old'; drawArch(); };
+document.getElementById('archNew').onclick = () => { arch = 'new'; drawArch(); };
+['etlLoad', 'biSuspend', 'whSize'].forEach(id => document.getElementById(id).addEventListener('input', drawArch));
+drawArch();
+
+/* View 4: caches */
+const cache = { wh: false, ssd: false, res: false };
+function light(id, kind) {
+  ['cResult', 'cLocal', 'cMeta', 'cRemote'].forEach(c => document.getElementById(c).classList.remove('hit', 'slow'));
+  if (id) document.getElementById(id).classList.add(kind);
+}
+function chips() {
+  const set = (id, on, a, b) => { const el = document.getElementById(id); el.textContent = on ? a : b; el.className = 'chip ' + (on ? 'good' : 'warn'); };
+  set('sWh', cache.wh, 'Warehouse: running', 'Warehouse: suspended');
+  set('sSsd', cache.ssd, 'Local SSD: warm', 'Local SSD: empty');
+  set('sRes', cache.res, 'Result cache: saved', 'Result cache: empty');
+}
+function log(html) { document.getElementById('cacheLog').innerHTML = html; chips(); }
+document.getElementById('bRun').onclick = () => {
+  if (cache.res) { light('cResult', 'hit'); return log('<b>Instant.</b> Result cache hit. The warehouse was not used at all, so no compute cost.'); }
+  const resumed = cache.wh ? '' : 'The warehouse auto-resumed. ';
+  cache.wh = true;
+  if (cache.ssd) { light('cLocal', 'hit'); log(`<b>Fast.</b> ${resumed}It ran the query, reading data from its local SSD cache.`); }
+  else { light('cRemote', 'slow'); log(`<b>Slowest.</b> ${resumed}It fetched micro-partitions from remote storage. They are now cached on its SSD.`); }
+  cache.ssd = true; cache.res = true; chips();
+};
+document.getElementById('bCount').onclick = () => { light('cMeta', 'hit'); log('<b>Instant.</b> Row counts are kept in metadata, so cloud services answers without any warehouse.'); };
+document.getElementById('bInsert').onclick = () => {
+  cache.wh = true; cache.res = false; light(null);
+  log('New micro-partitions were written. The saved result is no longer valid because the data changed. The local SSD still holds the unchanged partitions.');
+};
+document.getElementById('bSuspend').onclick = () => {
+  cache.wh = false; cache.ssd = false; light(null);
+  log('Warehouse suspended. Its local SSD cache is cleared. The result cache survives because it lives in cloud services, not in the warehouse.');
+};
+document.getElementById('bReset').onclick = () => { Object.assign(cache, { wh: false, ssd: false, res: false }); light(null); log('Reset. Press <b>Run sales query</b> to start.'); };
+chips();
+
+/* View 5: time travel */
+document.getElementById('cloneSquares').innerHTML = squares(60, 142, 6, 30, 10) + squares(400, 142, 6, 30, 10);
+function drawTT() {
+  const R = +document.getElementById('ttRet').value;
+  const slider = document.getElementById('ttDays');
+  const max = R + 7 + (R > 1 ? 10 : 3);
+  slider.max = max;
+  if (+slider.value > max) slider.value = max;
+  const d = +slider.value;
+  document.getElementById('ttDaysVal').textContent = `${d} day${d === 1 ? '' : 's'}`;
+  const X = v => Math.round(40 + (v / max) * 600);
+  const zone = d <= R ? 0 : d <= R + 7 ? 1 : 2;
+  const seg = (a, b, cls, label, on) => {
+    const x1 = X(a), x2 = X(b), w = x2 - x1;
+    const fits = label.length * 7 + 12 < w;
+    return `<g class="${cls}" opacity="${on ? 1 : 0.55}"><rect class="box" x="${x1}" y="50" width="${w}" height="40" rx="4" ${on ? 'stroke-width="2"' : ''}/>
+      ${fits ? `<text class="ts" x="${x1 + w / 2}" y="70" text-anchor="middle" dominant-baseline="central">${label}</text>` : ''}</g>`;
+  };
+  const mx = X(d);
+  document.getElementById('ttSvg').innerHTML =
+    seg(0, R, 'c-teal', 'Time Travel', zone === 0) +
+    seg(R, R + 7, 'c-amber', 'Fail-safe', zone === 1) +
+    seg(R + 7, max, 'c-gray', 'Gone', zone === 2) +
+    `<line x1="${mx}" y1="38" x2="${mx}" y2="102" stroke="var(--text-primary)" stroke-width="1.5"/>
+     <circle cx="${mx}" cy="38" r="5" fill="var(--text-primary)"/>
+     <text class="ts" x="40" y="122">Dropped</text>
+     <text class="ts" x="${X(R)}" y="122" text-anchor="middle">day ${R}</text>
+     <text class="ts" x="${X(R + 7)}" y="122" text-anchor="middle">day ${R + 7}</text>
+     <text class="ts" x="40" y="142">Teal = you · amber = Snowflake Support only · gray = permanently deleted</text>`;
+  const msgs = [
+    'You can recover it yourself: <code>UNDROP TABLE orders;</code> or query the past with <code>SELECT * FROM orders AT(OFFSET =&gt; -3600);</code>',
+    'Time Travel has expired. Only <b>Snowflake Support</b> can recover the data during the 7-day Fail-safe period, which is meant for disasters. You cannot query it.',
+    'Both Time Travel and Fail-safe have passed. The data is <b>permanently deleted</b>.'
+  ];
+  document.getElementById('ttInfo').innerHTML = msgs[zone];
+}
+document.getElementById('ttRet').addEventListener('change', drawTT);
+document.getElementById('ttDays').addEventListener('input', drawTT);
+drawTT();
+
+/* ---------- Shared helpers for the topics tab ---------- */
+const esc = s => s.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
+const code = s => `<pre class="code">${esc(s)}</pre>`;
+const SV = (h, inner) => `<svg viewBox="0 0 680 ${h}" xmlns="${NS}">${inner}</svg>`;
+function B(x, y, w, h, c, t, s, o = 1, sel = false) {
+  const cx = x + w / 2, cy = y + h / 2;
+  return `<g class="c-${c}" opacity="${o}"><rect class="box" x="${x}" y="${y}" width="${w}" height="${h}" rx="8"${sel ? ' stroke-width="2"' : ''}/>` +
+    `<text class="th" x="${cx}" y="${s ? cy - 9 : cy}" text-anchor="middle" dominant-baseline="central">${t}</text>` +
+    (s ? `<text class="ts" x="${cx}" y="${cy + 11}" text-anchor="middle" dominant-baseline="central">${s}</text>` : '') + `</g>`;
+}
+const A = (x1, y1, x2, y2, d) => `<line class="arr" x1="${x1}" y1="${y1}" x2="${x2}" y2="${y2}" marker-end="url(#arr2)"${d ? ' stroke-dasharray="4 4"' : ''}/>`;
+const LN = (x1, y1, x2, y2, d) => `<line class="arr" x1="${x1}" y1="${y1}" x2="${x2}" y2="${y2}"${d ? ' stroke-dasharray="4 4"' : ''}/>`;
+const TX = (x, y, t, a = 'middle', c = 'ts') => `<text class="${c}" x="${x}" y="${y}" text-anchor="${a}" dominant-baseline="central">${t}</text>`;
+const seg = (k, cur, opts) => `<div class="row" style="margin:0 0 10px">${opts.map(([v, l]) => `<button class="btn${String(cur) === String(v) ? ' on' : ''}" data-act="${k}:${v}">${l}</button>`).join('')}</div>`;
+const tbl = (head, rows, sel = -1) => `<table><tr>${head.map(h => `<th>${h}</th>`).join('')}</tr>${rows.map((r, i) => `<tr${i === sel ? ' class="sel"' : ''}>${r.map(c => `<td>${c}</td>`).join('')}</tr>`).join('')}</table>`;
+const ul = items => `<ul style="padding-left:18px;margin-top:8px">${items.map(i => `<li>${i}</li>`).join('')}</ul>`;
+
+const GROUPS = ['Loading data', 'Tables & modelling', 'Performance', 'Pipelines & code', 'Security & sharing', 'Cost & platform', 'Tools'];
+
+/* ---------- Topic content ---------- */
+const STG = {
+  user: ['User stage · @~', `Every user gets one automatically. Only that user can use it. Handy for quick personal loads.`,
+    `PUT file:///tmp/orders.csv @~/load/;\nCOPY INTO orders FROM @~/load/\n  FILE_FORMAT = (TYPE = 'CSV' SKIP_HEADER = 1);`],
+  table: ['Table stage · @%orders', `Every table gets one automatically. Files in it can only be loaded into that one table.`,
+    `PUT file:///tmp/orders.csv @%orders;\nCOPY INTO orders\n  FILE_FORMAT = (TYPE = 'CSV' SKIP_HEADER = 1);`],
+  named: ['Named internal stage · @my_stage', `You create it, grant it to roles, and attach a file format. The most flexible internal option.`,
+    `CREATE STAGE my_stage FILE_FORMAT = (TYPE = 'CSV' SKIP_HEADER = 1);\nPUT file:///tmp/orders.csv @my_stage;\nCOPY INTO orders FROM @my_stage;`],
+  ext: ['External stage · @ext_stage', `Points to your own bucket. Files stay there. A storage integration holds the cloud credentials, so no keys appear in SQL.`,
+    `CREATE STAGE ext_stage\n  URL = 's3://my-bucket/orders/'\n  STORAGE_INTEGRATION = s3_int\n  FILE_FORMAT = (TYPE = 'PARQUET');\nCOPY INTO orders FROM @ext_stage\n  MATCH_BY_COLUMN_NAME = CASE_INSENSITIVE;`]
+};
+const PIPE_STEPS = [
+  `A new file lands in the bucket behind a stage (S3, Azure Blob or GCS).`,
+  `The cloud sends an event notification (S3 → SQS, Azure → Event Grid, GCS → Pub/Sub). With <code>AUTO_INGEST = FALSE</code>, your app calls the Snowpipe REST API instead.`,
+  `Snowpipe queues the file and records it in load history, so the same file is not loaded twice.`,
+  `Snowflake-managed <b>serverless</b> compute runs the <code>COPY INTO</code> statement defined in the pipe. None of your warehouses is used.`,
+  `Rows usually appear within about a minute. Snowpipe is billed as serverless usage, not warehouse time.`
+];
+const SEC = [
+  ['Network', 'gray', `Network policies allow or block IP ranges. Private connectivity (AWS PrivateLink, Azure Private Link) keeps traffic off the public internet (Business Critical).`],
+  ['Authentication', 'purple', `Who are you? Passwords with MFA, single sign-on through SAML, key-pair authentication for service users, and OAuth.`],
+  ['Authorization (RBAC)', 'teal', `What may you do? Privileges are granted to roles, and roles are granted to users. See the RBAC topic.`],
+  ['Data policies', 'coral', `Which rows and values may you see? Dynamic data masking, row access policies, tag-based policies, and secure views.`],
+  ['Encryption', 'amber', `All data is encrypted at rest with AES-256 and in transit with TLS. Keys are rotated automatically. Tri-Secret Secure adds your own key on top (Business Critical).`]
+];
+const PEOPLE = [['Ravi', 'ravi@mail.com', 'India', '90000'], ['Meena', 'meena@mail.com', 'India', '75000'], ['John', 'john@mail.com', 'US', '120000'], ['Priya', 'priya@mail.com', 'US', '65000']];
+const USERS = [[1, 'a@mail.com'], [2, 'b@mail.com'], [3, 'a@mail.com'], [4, 'c@mail.com'], [5, 'b@mail.com'], [6, 'a@mail.com']];
+const PARTS = {
+  good: [[1, 1], [1, 1], [2, 2], [2, 2], [3, 3], [3, 3], [4, 4], [4, 4]],
+  bad: [[1, 4], [1, 3], [2, 4], [1, 2], [3, 4], [1, 4], [2, 3], [1, 4]]
+};
+const MON = ['', 'Jan', 'Feb', 'Mar', 'Apr'];
+
+const TOPICS = [
+  /* ===== Loading data ===== */
+  { id: 'stages', g: 0, q: [7], short: 'Stages', title: 'Stages: where files wait before loading',
+    lead: `A stage is a landing zone for data files. You load from a stage into a table with <code>COPY INTO</code>, and unload the other way. Click a stage type.`,
+    s: { k: 'named' },
+    view(s) {
+      const ext = s.k === 'ext', i = STG[s.k];
+      return seg('k', s.k, [['user', 'User @~'], ['table', 'Table @%'], ['named', 'Named @'], ['ext', 'External']]) + SV(240,
+        `<g opacity="${ext ? 0.35 : 1}">${B(20, 30, 150, 56, 'gray', 'Local files', 'laptop or server')}${A(170, 58, 246, 58)}${TX(208, 46, 'PUT')}${B(250, 20, 190, 76, 'coral', 'Internal stage', 'Snowflake-managed', 1, !ext)}${A(440, 58, 526, 106)}</g>
+         <g opacity="${ext ? 1 : 0.35}">${B(20, 154, 150, 56, 'gray', 'Your bucket', 'S3 / Blob / GCS')}${A(170, 182, 246, 182, true)}${TX(208, 170, 'points to')}${B(250, 144, 190, 76, 'amber', 'External stage', 'files stay in bucket', 1, ext)}${A(440, 182, 526, 134)}</g>
+         ${B(530, 87, 130, 66, 'teal', 'Table', 'orders')}${TX(472, 120, 'COPY INTO')}`) +
+        `<div class="panel"><h3>${i[0]}</h3><p>${i[1]}</p>${code(i[2])}</div>`;
+    },
+    body: ul([`<b>PUT</b> uploads local files to an <b>internal</b> stage (from SnowSQL, Snowflake CLI or a driver). External stages don't need PUT, because the files are already in your bucket.`,
+      `<code>LIST @my_stage;</code> shows the files in a stage.`,
+      `<b>Unloading</b> is the reverse: <code>COPY INTO @my_stage FROM orders;</code>, then <code>GET</code> to download.`]),
+    say: `A stage is a file landing zone. Internal stages use Snowflake-managed storage: the user stage @~, the table stage @%table, and named stages @name. External stages point to my own S3, Azure or GCS bucket. Files are loaded with COPY INTO.`,
+    fix: `Q7 says external-stage data is "located outside of a cloud system". Both kinds live in the cloud. An external stage points to <b>your</b> cloud storage. An internal stage uses storage that <b>Snowflake</b> manages.` },
+
+  { id: 'snowpipe', g: 0, q: [6], short: 'Snowpipe', title: 'Snowpipe: continuous, automatic loading',
+    lead: `Snowpipe loads new files within about a minute of their arrival, without a scheduler or a warehouse. Step through it.`,
+    s: { i: 0 },
+    act(s, k, v) { s.i = v === 'next' ? Math.min(4, s.i + 1) : Math.max(0, s.i - 1); },
+    view(s) {
+      const T = [['File', 'lands in bucket'], ['Event', 'new-file alert'], ['Pipe', 'queues the file'], ['Serverless', 'runs the COPY'], ['Table', 'rows appear']];
+      let g = '';
+      T.forEach((t, k) => { const x = 20 + k * 136; g += B(x, 30, 112, 64, k <= s.i ? 'teal' : 'gray', t[0], t[1], k <= s.i ? 1 : 0.5, k === s.i); if (k < 4) g += A(x + 112, 62, x + 132, 62); });
+      return SV(120, g + TX(660, 112, `Step ${s.i + 1} of 5`, 'end')) +
+        `<div class="row" style="margin-top:4px"><button class="btn" data-act="step:back">Back</button><button class="btn" data-act="step:next">Next</button></div>` +
+        `<div class="panel"><p>${PIPE_STEPS[s.i]}</p></div>`;
+    },
+    body: code(`CREATE PIPE orders_pipe AUTO_INGEST = TRUE AS\n  COPY INTO orders FROM @ext_stage\n  FILE_FORMAT = (TYPE = 'JSON');\n\nSELECT SYSTEM$PIPE_STATUS('orders_pipe');   -- is it running?`) +
+      tbl(['', 'COPY INTO', 'Snowpipe', 'Snowpipe Streaming'], [
+        ['Style', 'batch, when you run it', 'continuous, file by file', 'row by row, no files'],
+        ['Compute', 'your warehouse', 'serverless', 'serverless'],
+        ['Trigger', 'you or a task', 'cloud event or REST API', 'SDK or Kafka connector'],
+        ['Load history', '64 days', '14 days', 'n/a'],
+        ['Best for', 'large scheduled loads', 'files arriving all day', 'lowest latency streams']]),
+    say: `Snowpipe is serverless, continuous loading. A cloud event notification or a REST call tells it a new file has arrived. It runs the COPY statement defined in the pipe, usually within a minute, and it doesn't use a warehouse.`,
+    fix: `Q6 says Snowpipe "continuously monitors" the stage and "pre-processes" the data. It is <b>event-driven</b> (or called through the REST API), and it only applies whatever the pipe's COPY statement does.` },
+
+  { id: 'json', g: 0, q: [12], short: 'JSON / VARIANT', title: 'Semi-structured data: JSON in a VARIANT column',
+    lead: `Load JSON as-is into a <code>VARIANT</code> column, then query it with paths. No schema is needed up front.`,
+    s: { m: 'path' },
+    view(s) {
+      const json = `{\n  "id": 1,\n  "customer": { "name": "Ravi", "city": "Pune" },\n  "items": [\n    { "sku": "A1", "qty": 2 },\n    { "sku": "B7", "qty": 1 }\n  ]\n}`;
+      const q = s.m === 'path'
+        ? `SELECT raw:id::INT                AS id,\n       raw:customer.name::STRING AS name,\n       raw:customer.city::STRING AS city\nFROM orders_json;`
+        : `SELECT raw:id::INT          AS id,\n       f.value:sku::STRING AS sku,\n       f.value:qty::INT    AS qty\nFROM orders_json,\n     LATERAL FLATTEN(input => raw:items) f;`;
+      const res = s.m === 'path' ? tbl(['id', 'name', 'city'], [['1', 'Ravi', 'Pune']]) : tbl(['id', 'sku', 'qty'], [['1', 'A1', '2'], ['1', 'B7', '1']]);
+      return seg('m', s.m, [['path', 'Read nested fields'], ['flatten', 'Turn the array into rows']]) +
+        `<div class="cols2"><div><div class="mini">One row of column <code>raw</code> (VARIANT)</div>${code(json)}</div><div><div class="mini">Query</div>${code(q)}<div class="mini">Result</div>${res}</div></div>`;
+    },
+    body: ul([`<code>:</code> goes into the JSON, <code>.</code> or <code>[0]</code> goes deeper, and <code>::</code> casts to a SQL type.`,
+      `<code>FLATTEN</code> explodes an array into one row per element. Use it with <code>LATERAL</code>.`,
+      `Types: <code>VARIANT</code> (any value), <code>OBJECT</code> (key-value), <code>ARRAY</code>. <code>PARSE_JSON('...')</code> converts text.`,
+      `Supported formats: JSON, Avro, ORC, Parquet, XML.`,
+      `Snowflake stores common paths in columnar sub-columns, so they compress and prune almost like normal columns.`]),
+    say: `I load JSON into a VARIANT column without defining a schema, read fields with path notation like raw:customer.name::STRING, and use LATERAL FLATTEN to turn arrays into rows.` },
+
+  { id: 'elt', g: 0, q: [24], short: 'ETL vs ELT', title: 'ETL vs ELT in Snowflake',
+    lead: `The only difference is <b>where</b> the transform happens. Switch between them.`,
+    s: { m: 'elt' },
+    view(s) {
+      const etl = s.m === 'etl';
+      const boxes = etl ? [['gray', 'Extract', 'from sources'], ['amber', 'Transform', 'in an ETL tool'], ['coral', 'Load', 'clean data in']]
+        : [['gray', 'Extract', 'from sources'], ['coral', 'Load', 'raw into Snowflake'], ['teal', 'Transform', 'SQL or dbt inside']];
+      let g = ''; boxes.forEach((b, i) => { const x = 20 + i * 230; g += B(x, 30, 180, 64, b[0], b[1], b[2]); if (i < 2) g += A(x + 180, 62, x + 226, 62); });
+      g += TX(340, 126, etl ? 'Transform happens on a separate server before Snowflake sees the data' : 'Raw data lands first. Snowflake warehouses do the transform.');
+      return seg('m', s.m, [['etl', 'ETL'], ['elt', 'ELT']]) + SV(145, g);
+    },
+    body: ul([`Snowflake suits <b>ELT</b>: compute is elastic and separate, so you can load raw data cheaply and transform it later with SQL.`,
+      `Typical ELT stack: Snowpipe or COPY → raw tables → dbt models, streams and tasks, or dynamic tables → curated tables.`,
+      `Keeping the raw layer means you can re-run transforms without re-extracting from the source.`,
+      `ETL still makes sense when data must be cleaned or masked before it is allowed into the warehouse.`]),
+    say: `ETL transforms before loading; ELT loads raw data first and transforms inside the warehouse. Snowflake favours ELT because warehouses scale independently, so transforms can run in SQL or dbt right where the data lives.` },
+
+  /* ===== Tables & modelling ===== */
+  { id: 'tables', g: 1, q: [14, 58], short: 'Table types', title: 'Permanent, transient, temporary and external tables',
+    lead: `The types differ in how long they live, who can see them, and how much recovery protection they get. Click a row.`,
+    s: { k: 0 },
+    view(s) {
+      const R = [
+        ['Permanent', [['teal', 290, 'Time Travel 0–90 days'], ['amber', 130, 'Fail-safe 7 days']]],
+        ['Transient', [['teal', 150, 'Time Travel 0–1 day']]],
+        ['Temporary', [['teal', 150, 'Time Travel 0–1 day'], ['gray', 200, 'dropped at session end']]],
+        ['External', [['gray', 280, 'no Time Travel or Fail-safe']]]];
+      let g = '';
+      R.forEach((r, i) => {
+        const y = 14 + i * 52, on = +s.k === i; let x = 170;
+        g += `<g data-act="k:${i}" class="layer" opacity="${on ? 1 : 0.4}"><rect x="10" y="${y - 4}" width="660" height="48" rx="8" fill="transparent"/>${TX(20, y + 20, r[0], 'start', 'th')}`;
+        r[1].forEach(b => { g += `<g class="c-${b[0]}"><rect class="box" x="${x}" y="${y}" width="${b[1]}" height="40" rx="6"${on ? ' stroke-width="1.5"' : ''}/>${TX(x + b[1] / 2, y + 20, b[2])}</g>`; x += b[1] + 6; });
+        g += `</g>`;
+      });
+      return SV(222, g) + tbl(['Type', 'Lives until', 'Who sees it', 'Time Travel', 'Fail-safe', 'Use for'], [
+        ['Permanent', 'dropped', 'any role with privileges', '0–90 days (1 by default)', '7 days', 'production data'],
+        ['Transient', 'dropped', 'any role with privileges', '0–1 day', 'none', 'staging and ETL work tables'],
+        ['Temporary', 'session ends', 'only the session that made it', '0–1 day', 'none', 'scratch results in one session'],
+        ['External', 'dropped (files stay)', 'any role with privileges', 'none', 'none', 'querying data-lake files in place']], +s.k);
+    },
+    body: code(`CREATE TABLE orders (id NUMBER, order_date DATE);               -- permanent (default)\nCREATE TRANSIENT TABLE stg_orders (id NUMBER, order_date DATE);\nCREATE TEMPORARY TABLE tmp_orders (id NUMBER, creation_date DATE);\nCREATE EXTERNAL TABLE ext_orders\n  LOCATION = @ext_stage AUTO_REFRESH = TRUE\n  FILE_FORMAT = (TYPE = PARQUET);`) +
+      ul([`Transient and temporary tables skip Fail-safe, so their storage costs less, but Snowflake Support can't recover them.`,
+        `A temporary table with the same name as a permanent table hides the permanent one for that session.`,
+        `A transient database or schema makes every table created in it transient.`]),
+    say: `Permanent tables get up to 90 days of Time Travel plus 7 days of Fail-safe. Transient tables persist until dropped but have at most 1 day of Time Travel and no Fail-safe, which makes them good for staging. Temporary tables are the same but visible only to my session, and they disappear when it ends.`,
+    fix: `Q58's example <code>create temporary table table name (...)</code> won't run: a table name can't contain a space unless it is quoted. Use <code>tmp_orders</code>.` },
+
+  { id: 'schema', g: 1, q: [15, 38], short: 'Star vs snowflake schema', title: 'Star schema vs snowflake schema',
+    lead: `This is about <b>data modelling</b>. It has nothing to do with Snowflake the product, despite the name. Toggle to see how dimensions get split.`,
+    s: { m: 'star' },
+    view(s) {
+      const snow = s.m === 'snow';
+      let g = B(270, 125, 140, 50, 'teal', 'fact_sales', 'keys + amounts') +
+        LN(340, 125, 220, 80) + LN(340, 125, 460, 80) + LN(340, 175, 220, 220) + LN(340, 175, 460, 220) +
+        B(150, 30, 140, 50, 'coral', 'dim_student') + B(390, 30, 140, 50, 'coral', 'dim_teacher') +
+        B(150, 220, 140, 50, 'coral', 'dim_school') + B(390, 220, 140, 50, 'coral', 'dim_date');
+      if (snow) g += LN(130, 55, 150, 55) + LN(530, 55, 550, 55) + LN(130, 245, 150, 245) +
+        B(10, 30, 120, 50, 'gray', 'dim_category') + B(550, 30, 120, 50, 'gray', 'dim_city') + B(10, 220, 120, 50, 'gray', 'dim_location');
+      return seg('m', s.m, [['star', 'Star schema'], ['snow', 'Snowflake schema']]) + SV(290, g) +
+        `<p class="mini">${snow ? 'Dimensions are normalised into extra tables, so queries need more joins.' : 'Each dimension is one wide table joined straight to the fact table.'}</p>`;
+    },
+    body: tbl(['', 'Star', 'Snowflake schema'], [
+      ['Dimensions', 'denormalised, one table each', 'normalised into sub-tables'],
+      ['Joins per query', 'fewer', 'more'],
+      ['Redundancy', 'some repeated values', 'less'],
+      ['Query speed', 'usually faster', 'usually slower'],
+      ['Good for', 'BI dashboards, simple SQL', 'large, frequently updated dimensions']]) +
+      ul([`In Snowflake the product, star schemas are usually preferred: storage is cheap and columnar compression shrinks the repeated values.`]),
+    say: `A star schema has one fact table joined directly to denormalised dimensions, so it needs fewer joins and runs faster. A snowflake schema normalises the dimensions into sub-tables, which reduces redundancy but adds joins.`,
+    fix: `The article's DDL uses PRIMARY KEY and FOREIGN KEY, but Snowflake <b>does not enforce</b> them on standard tables. They are informational only (just NOT NULL is enforced). Its fact table is also keyed on Student_ID alone, which would allow only one fact row per student.` },
+
+  { id: 'views', g: 1, q: [27], short: 'Views & MVs', title: 'Standard, secure and materialized views',
+    lead: `All three look like tables to the user. They differ in whether they store data and what they hide.`,
+    body: `<div class="grid">
+      <div class="card"><h3>Standard view</h3><p>A saved query. It runs every time you select from it. No extra storage.</p></div>
+      <div class="card"><h3>Secure view</h3><p>Hides its definition and blocks optimisations that could leak hidden rows. Required when sharing views.</p></div>
+      <div class="card"><h3>Materialized view</h3><p>Stores precomputed results and keeps them up to date in the background. Enterprise edition.</p></div></div>` +
+      tbl(['', 'Standard', 'Secure', 'Materialized'], [
+        ['Stores data?', 'no', 'no', 'yes'],
+        ['Read speed', 'runs the query each time', 'same, sometimes slower', 'fast'],
+        ['Extra cost', 'none', 'none', 'storage + background refresh credits'],
+        ['Limits', 'none', 'none', 'one table only, no joins, limited functions'],
+        ['Use for', 'simpler SQL', 'sharing, hiding logic', 'repeated heavy aggregate on one big table']]) +
+      code(`CREATE VIEW v_sales AS SELECT region, amount FROM orders;\nCREATE SECURE VIEW sv_sales AS SELECT region, amount FROM orders;\nCREATE MATERIALIZED VIEW mv_daily_sales AS\n  SELECT order_date, SUM(amount) AS total\n  FROM orders\n  GROUP BY order_date;`) +
+      ul([`A materialized view always returns current data: if the background refresh is behind, Snowflake combines it with the newest base-table changes.`,
+        `Need joins? Use a <b>dynamic table</b>, which refreshes a query's result to a target lag such as 5 minutes.`]),
+    say: `A standard view is a stored query that runs each time. A secure view also hides its definition and is the kind you share. A materialized view stores the result and Snowflake keeps it refreshed, which makes repeated reads fast. It costs storage and background credits, and it can only use one table without joins.` },
+
+  { id: 'oltp', g: 1, q: [19, 20], short: 'OLTP vs OLAP', title: 'Is Snowflake OLTP or OLAP?',
+    lead: `Snowflake is an <b>OLAP</b> database: built for scanning and aggregating huge amounts of data. The storage layout shows why.`,
+    body: SV(190, TX(20, 20, 'Row store (OLTP): SUM(amount) must read every block', 'start', 'th') +
+        B(20, 34, 200, 40, 'amber', '1 · Ravi · 250') + B(240, 34, 200, 40, 'amber', '2 · Meena · 100') + B(460, 34, 200, 40, 'amber', '3 · John · 400') +
+        TX(20, 104, 'Column store (Snowflake): reads only the amount block', 'start', 'th') +
+        B(20, 118, 200, 40, 'gray', '1 · 2 · 3', '', 0.4) + B(240, 118, 200, 40, 'gray', 'Ravi · Meena · John', '', 0.4) + B(460, 118, 200, 40, 'teal', '250 · 100 · 400', '', 1, true)) +
+      tbl(['', 'OLTP', 'OLAP'], [
+        ['Typical work', 'many tiny inserts and updates (place an order)', 'big reads and aggregates (sales by region)'],
+        ['Rows per query', 'a few', 'millions to billions'],
+        ['Storage', 'row-based', 'columnar'],
+        ['Examples', 'MySQL, PostgreSQL, Oracle OLTP', 'Snowflake, BigQuery, Redshift']]) +
+      ul([`Database type (Q20): a cloud-native, columnar, relational SQL database with ACID transactions and native semi-structured support.`,
+        `For light transactional workloads, Snowflake offers <b>hybrid tables</b> (Unistore): row storage, enforced primary keys and indexes.`]),
+    say: `Snowflake is OLAP: a columnar, relational SQL warehouse built for large analytical scans. It supports ACID transactions, and hybrid tables cover small transactional workloads, but it isn't a general-purpose OLTP database.` },
+
+  /* ===== Performance ===== */
+  { id: 'cluster', g: 2, q: [28, 32, 39], short: 'Clustering', title: 'Clustering keys and automatic clustering',
+    lead: `Clustering means rows with similar values sit in the same micro-partitions, so pruning can skip more. Pick a layout and a filter.`,
+    s: { m: 'good', f: 3 },
+    view(s) {
+      const P = PARTS[s.m], f = +s.f; let g = '', n = 0;
+      P.forEach((p, i) => { const hit = p[0] <= f && f <= p[1]; if (hit) n++; const x = 25 + i * 80;
+        g += B(x, 30, 70, 70, hit ? 'teal' : 'gray', `P${i + 1}`, p[0] === p[1] ? MON[p[0]] : `${MON[p[0]]}–${MON[p[1]]}`, hit ? 1 : 0.4, hit); });
+      g += TX(340, 128, `WHERE order_date in ${MON[f]}  →  scans ${n} of 8 micro-partitions`, 'middle', 'th');
+      return seg('m', s.m, [['good', 'Well clustered by date'], ['bad', 'Poorly clustered']]) +
+        seg('f', s.f, [[1, 'Jan'], [2, 'Feb'], [3, 'Mar'], [4, 'Apr']]) + SV(150, g) +
+        `<p class="mini">Each box shows the min–max order month stored in that micro-partition. Teal = must be scanned.</p>`;
+    },
+    body: code(`ALTER TABLE orders CLUSTER BY (order_date);       -- define a clustering key\nSELECT SYSTEM$CLUSTERING_INFORMATION('orders', '(order_date)');\n-- look at average_depth: lower = better clustered\nALTER TABLE orders SUSPEND RECLUSTER;              -- pause automatic clustering`) +
+      ul([`<b>Natural clustering</b> follows load order. Data loaded day by day is already clustered by date.`,
+        `Updates, deletes and out-of-order loads mix values up over time. That is when a <b>clustering key</b> helps.`,
+        `<b>Automatic clustering</b> is a serverless background service that reclusters as data changes. It doesn't block DML, but it does cost credits.`,
+        `Use clustering keys on <b>very large</b> tables (multi-TB) whose queries filter on the same columns. Pick columns of moderate cardinality: a date, not a unique ID and not a true/false flag.`]),
+    say: `Clustering is how well similar values are co-located in micro-partitions. On very large tables I define a clustering key on the columns used in filters, for example the date. Automatic clustering then keeps the table organised in the background, so pruning can skip most partitions.`,
+    fix: `Q28 says Snowflake "uses indexing" and "creates indexes in the backend". It doesn't. Speed comes from <b>pruning micro-partitions with min/max metadata</b>, which clustering makes more effective.` },
+
+  { id: 'indexes', g: 2, q: [57], short: 'No indexes?', title: 'Does Snowflake use indexes?',
+    lead: `Standard tables have <b>no indexes</b>. Snowflake has other tools for each kind of slow query.`,
+    body: tbl(['Problem', 'Tool', 'Notes'], [
+      ['Range filters on a huge table (dates)', 'Clustering key', 'better pruning; background credits'],
+      ['Needle-in-a-haystack lookups (WHERE id = ...)', 'Search optimization service', 'Enterprise; builds a search access path; storage + credits'],
+      ['Occasional giant scans slow everyone down', 'Query acceleration service', 'Enterprise; offloads scan work to serverless compute'],
+      ['Same query again and again', 'Result cache', 'free, automatic, 24 hours'],
+      ['Same heavy aggregate on one table', 'Materialized view', 'Enterprise; auto-refreshed'],
+      ['Transactional point reads', 'Hybrid tables', 'the only tables with real indexes']]) +
+      code(`ALTER TABLE orders ADD SEARCH OPTIMIZATION ON EQUALITY(customer_id);\nALTER WAREHOUSE wh_bi SET ENABLE_QUERY_ACCELERATION = TRUE;`),
+    say: `No. Standard tables have no indexes to create or maintain. Snowflake prunes micro-partitions using their metadata. For specific patterns I can add clustering keys, search optimization for selective lookups, or query acceleration. Hybrid tables are the exception: they do support indexes.`,
+    fix: `Q57 says Snowflake "uses automatic indexing internally". There's no hidden index. What it keeps is <b>micro-partition metadata</b> (min/max values, counts) that it uses for pruning.` },
+
+  { id: 'qopt', g: 2, q: [40], short: 'Query tuning', title: 'How to optimise a slow query',
+    lead: `Start with the <b>Query Profile</b> in Snowsight. It shows where the time goes. Here's how to read one.`,
+    body: SV(290,
+        B(130, 16, 180, 40, 'gray', 'Result') + A(220, 80, 220, 58) +
+        B(130, 80, 180, 48, 'teal', 'Aggregate', '8% of time') + A(220, 152, 220, 130) +
+        B(130, 152, 180, 48, 'teal', 'Join', '22% of time') + A(110, 224, 190, 202) + A(310, 224, 250, 202) +
+        B(20, 224, 180, 48, 'amber', 'TableScan orders', '62% of time', 1, true) + B(220, 224, 180, 48, 'teal', 'TableScan customers', '8% of time') +
+        `<g class="c-gray"><rect class="box" x="440" y="16" width="220" height="256" rx="10"/></g>` + TX(460, 42, 'Statistics', 'start', 'th') +
+        [['Partitions scanned', '480'], ['Partitions total', '500'], ['Bytes spilled (local)', '0 B'], ['Bytes spilled (remote)', '0 B']]
+          .map((r, i) => TX(460, 82 + i * 44, r[0], 'start') + TX(645, 82 + i * 44, r[1], 'end', 'th')).join('')) +
+      `<p class="mini">Reading this: the orders scan is the hot spot, and 480 of 500 partitions were scanned, so pruning isn't working. Fix the filter or the clustering before you resize the warehouse.</p>` +
+      tbl(['Tip', 'Why it helps'], [
+        ['Select only the columns you need (no SELECT *)', 'columnar storage reads less'],
+        ['Filter on the date or clustered column', 'pruning skips micro-partitions'],
+        ['Don\'t wrap filter columns in functions', 'it can stop pruning'],
+        ['Watch for exploding joins', 'a missing join condition multiplies rows'],
+        ['Use QUALIFY instead of self-joins for top-N', 'one pass with a window function'],
+        ['Spilling to local or remote storage?', 'the warehouse is too small: scale up'],
+        ['Many users queueing?', 'scale out with a multi-cluster warehouse'],
+        ['Give big workloads their own warehouse', 'no fighting over compute']]),
+    say: `I open the Query Profile and look for the most expensive operator, partitions scanned versus total, spilling, and exploding joins. Then I fix the query first: select fewer columns, filter so pruning works, avoid row explosions. Only after that do I resize: scale up for spilling, scale out for queueing.` },
+
+  { id: 'acid', g: 2, q: [35, 43], short: 'Concurrency & ACID', title: 'Concurrency and data consistency',
+    lead: `Readers never wait for writers, because micro-partitions are never edited in place. Toggle the update.`,
+    s: { m: 'during' },
+    view(s) {
+      const after = s.m === 'after';
+      let g = after
+        ? B(40, 40, 70, 50, 'teal', 'A') + B(120, 40, 70, 50, 'teal', 'B′') + B(200, 40, 70, 50, 'teal', 'C') + TX(300, 65, 'Version 2 committed: every new SELECT now sees B′', 'start') +
+          B(120, 130, 70, 50, 'gray', 'B', '', 0.6) + TX(300, 155, 'Old B is kept for Time Travel, then Fail-safe', 'start')
+        : B(40, 40, 70, 50, 'teal', 'A') + B(120, 40, 70, 50, 'teal', 'B') + B(200, 40, 70, 50, 'teal', 'C') + TX(300, 65, 'Version 1 committed: what every SELECT reads', 'start') +
+          `<g class="c-amber"><rect class="box" x="120" y="130" width="70" height="50" rx="8" stroke-dasharray="4 4"/>${TX(155, 155, 'B′', 'middle', 'th')}</g>` + TX(300, 155, 'UPDATE writes a new partition: not visible yet', 'start');
+      return seg('m', s.m, [['during', 'During the UPDATE'], ['after', 'After COMMIT']]) + SV(200, g);
+    },
+    body: ul([`Transactions are <b>ACID</b>. A commit switches the table's metadata to the new set of micro-partitions in one atomic step.`,
+      `Isolation level is <b>READ COMMITTED</b>: a statement sees only committed data.`,
+      `UPDATE, DELETE and MERGE on the same table take a lock and run one at a time. SELECTs are never blocked.`,
+      `Concurrency across many users comes from <b>multi-cluster warehouses</b> (extra clusters start when queries queue) and separate warehouses per team.`,
+      `Storage is replicated across availability zones, and cloud services keeps one consistent metadata view for all warehouses.`]),
+    say: `Snowflake gives ACID transactions with READ COMMITTED isolation. Because micro-partitions are immutable, a write creates new partitions and the commit swaps the metadata atomically. Readers keep reading the old version, so they're never blocked. For many users, I use multi-cluster warehouses.` },
+
+  /* ===== Pipelines & code ===== */
+  { id: 'streams', g: 3, q: [30], short: 'Streams & tasks', title: 'Streams and tasks: incremental pipelines',
+    lead: `A <b>stream</b> is a bookmark that records what changed in a table. A <b>task</b> is an alarm clock that runs SQL. Try it.`,
+    s: { rows: [], next: 1, target: 0, msg: 'Press <b>Insert 3 rows</b> to start.' },
+    act(s, k, v) {
+      if (v === 'ins') { for (let i = 0; i < 3; i++) s.rows.push([s.next++, 'INSERT', 'FALSE']); s.msg = '3 rows inserted into orders. The stream now shows 3 changes.'; }
+      if (v === 'upd') { if (s.next === 1) { s.msg = 'Insert some rows first.'; return; } const id = s.next - 1; s.rows.push([id, 'DELETE', 'TRUE'], [id, 'INSERT', 'TRUE']); s.msg = `Order ${id} updated. A stream shows an update as a DELETE + INSERT pair with ISUPDATE = TRUE.`; }
+      if (v === 'run') {
+        if (!s.rows.length) { s.msg = 'Task skipped: SYSTEM$STREAM_HAS_DATA returned FALSE, so no warehouse started and nothing was billed.'; return; }
+        const ins = s.rows.filter(r => r[1] === 'INSERT' && r[2] === 'FALSE').length;
+        s.target += ins; s.msg = `Task ran and consumed ${s.rows.length} change rows (${ins} new orders added). The stream's offset moved forward, so the stream is empty again.`; s.rows = [];
+      }
+      if (v === 'reset') { s.rows = []; s.next = 1; s.target = 0; s.msg = 'Reset.'; }
+    },
+    view(s) {
+      const svg = SV(110, B(20, 24, 140, 56, 'coral', 'orders', 'source table') + A(160, 52, 196, 52) + B(200, 24, 140, 56, 'purple', 'Stream', 'change bookmark') + A(340, 52, 376, 52) +
+        B(380, 24, 140, 56, 'amber', 'Task', 'every 5 minutes') + A(520, 52, 556, 52) + B(560, 24, 110, 56, 'teal', 'orders_clean', `${s.target} rows`));
+      return svg + `<div class="row" style="margin-top:4px"><button class="btn" data-act="do:ins">Insert 3 rows</button><button class="btn" data-act="do:upd">Update 1 row</button><button class="btn" data-act="do:run">Task runs</button><button class="btn" data-act="do:reset">Reset</button></div>` +
+        `<div class="panel"><p>${s.msg}</p><div class="mini">SELECT * FROM orders_stream;</div>${s.rows.length ? tbl(['order_id', 'METADATA$ACTION', 'METADATA$ISUPDATE'], s.rows) : '<p class="mini">(stream is empty)</p>'}</div>`;
+    },
+    body: code(`CREATE STREAM orders_stream ON TABLE orders;\n\nCREATE TASK load_orders\n  WAREHOUSE = wh_etl\n  SCHEDULE = '5 MINUTE'\n  WHEN SYSTEM$STREAM_HAS_DATA('orders_stream')\nAS\n  INSERT INTO orders_clean\n  SELECT order_id, amount FROM orders_stream\n  WHERE METADATA$ACTION = 'INSERT' AND NOT METADATA$ISUPDATE;\n\nALTER TASK load_orders RESUME;   -- tasks are created suspended`) +
+      ul([`A stream stores an <b>offset</b>, not a copy of the data. It is consumed when you use it in a DML statement that commits.`,
+        `Stream types: <b>standard</b> (inserts, updates, deletes), <b>append-only</b> (inserts only, cheaper), <b>insert-only</b> (external and Iceberg tables).`,
+        `Tasks run on a schedule (minutes or CRON) or after another task (<code>AFTER</code>), forming a DAG. Leave out WAREHOUSE to make a serverless task.`,
+        `<b>Dynamic tables</b> are the declarative alternative: write the SELECT and a target lag, and Snowflake handles the refresh.`]),
+    say: `A stream does change data capture on a table: it records inserts, updates and deletes since the last time it was consumed. A task runs SQL on a schedule or after another task. Together they build incremental pipelines: the task checks SYSTEM$STREAM_HAS_DATA, then merges only the changes.`,
+    fix: `Q30 says streams "use DML to make changes to tables". It's the other way round: streams <b>record</b> the changes that DML makes.` },
+
+  { id: 'dedup', g: 3, q: [47], short: 'Deduplication', title: 'Does Snowflake remove duplicates automatically?',
+    lead: `<b>No.</b> Duplicate rows load happily, and primary keys are not enforced. You remove duplicates yourself. This is SQL Question 5 again.`,
+    s: { m: 'before' },
+    view(s) {
+      const seen = {}; const rows = USERS.map(([id, e]) => { seen[e] = (seen[e] || 0) + 1; return [id, e, seen[e]]; });
+      const after = s.m === 'after';
+      const body = (after ? rows.filter(r => r[2] === 1) : rows).map(r => `<tr>${[r[0], r[1], r[2]].map(c => `<td${!after && r[2] > 1 ? ' class="strike"' : ''}>${c}</td>`).join('')}<td>${r[2] > 1 ? '<span class="chip warn">duplicate</span>' : '<span class="chip good">keep</span>'}</td></tr>`).join('');
+      return seg('m', s.m, [['before', 'Before'], ['after', 'After the dedupe']]) +
+        `<table><tr><th>user_id</th><th>email</th><th>rn</th><th></th></tr>${body}</table>`;
+    },
+    body: code(`-- Keep the lowest user_id per email, drop the rest\nCREATE OR REPLACE TABLE users AS\nSELECT *\nFROM users\nQUALIFY ROW_NUMBER() OVER (PARTITION BY email ORDER BY user_id) = 1;\n\n-- Or prevent duplicates while loading\nMERGE INTO users t USING new_users s ON t.email = s.email\nWHEN NOT MATCHED THEN INSERT (user_id, email) VALUES (s.user_id, s.email);`) +
+      ul([`PRIMARY KEY, UNIQUE and FOREIGN KEY constraints can be declared but are <b>not enforced</b> on standard tables. Only NOT NULL is enforced.`,
+        `What Snowflake <b>does</b> skip is <b>files</b>: COPY INTO remembers loaded files for 64 days and won't load them again (unless <code>FORCE = TRUE</code>).`]),
+    say: `Snowflake doesn't deduplicate rows, and it doesn't enforce primary or unique keys. It only skips files it has already loaded. I dedupe with QUALIFY ROW_NUMBER() OVER (PARTITION BY the key ORDER BY ...) = 1, or I use MERGE to load only new keys.`,
+    fix: `Q47 says Snowflake "automatically handles data deduplication". That's wrong. If you said it in an interview, it would be a red flag.` },
+
+  { id: 'procs', g: 3, q: [59], short: 'Stored procedures', title: 'Stored procedures and how they run',
+    lead: `A stored procedure bundles several SQL statements with logic (variables, IF, loops, error handling). You run it with <code>CALL</code>.`,
+    body: SV(110, B(20, 24, 145, 60, 'gray', 'CALL', 'purge_old(30)') + A(165, 54, 181, 54) + B(185, 24, 145, 60, 'purple', 'Compile', 'cloud services') + A(330, 54, 346, 54) +
+        B(350, 24, 145, 60, 'teal', 'Run statements', 'on your warehouse') + A(495, 54, 511, 54) + B(515, 24, 145, 60, 'gray', 'Return', 'one value')) +
+      code(`CREATE OR REPLACE PROCEDURE purge_old(keep_days INT)\nRETURNS STRING\nLANGUAGE SQL\nAS\n$$\nBEGIN\n  DELETE FROM logs\n  WHERE log_date < DATEADD(day, -1 * :keep_days, CURRENT_DATE());\n  RETURN 'Deleted ' || SQLROWCOUNT || ' rows';\nEND;\n$$;\n\nCALL purge_old(30);`) +
+      tbl(['', 'Stored procedure', 'UDF'], [
+        ['How you use it', 'CALL proc()', 'inside SELECT: SELECT my_fn(col)'],
+        ['Can run DDL and DML?', 'yes', 'no'],
+        ['Returns', 'one value (or a table)', 'a value per row (or a table for UDTFs)'],
+        ['Languages', 'SQL (Snowflake Scripting), JavaScript, Python, Java, Scala', 'SQL, JavaScript, Python, Java, Scala']]) +
+      ul([`<b>Owner's rights</b> (the default) run with the owner's privileges, which lets you give safe, limited access. <b>Caller's rights</b> run with the caller's privileges.`,
+        `Procedures are often scheduled by tasks.`]),
+    say: `I create a procedure with CREATE PROCEDURE in Snowflake Scripting, Python, JavaScript or Java, and run it with CALL. It runs its statements on the current warehouse, can do DDL and DML with control flow, and returns a value. It runs with owner's or caller's rights.`,
+    fix: `Q59's steps ("run the SQL command, retrieve results, retrieve metadata") describe what a <b>driver</b> does with any query. That isn't how procedures work.` },
+
+  { id: 'evolve', g: 3, q: [41], short: 'Schema evolution', title: 'Schema evolution',
+    lead: `Tables change over time. Snowflake makes most changes instant, and it can even add columns automatically during a load. Toggle it.`,
+    s: { m: 'before' },
+    view(s) {
+      const after = s.m === 'after'; const fileCols = ['id', 'name', 'city', 'email'];
+      let g = `<g class="c-gray"><rect class="box" x="20" y="20" width="240" height="170" rx="10"/></g>` + TX(140, 40, 'new_orders.parquet', 'middle', 'th');
+      fileCols.forEach((c, i) => { g += `<g class="c-gray"><rect class="inner" x="40" y="${58 + i * 30}" width="200" height="24" rx="6"/>${TX(140, 70 + i * 30, c)}</g>`; });
+      g += A(262, 105, 416, 105) + TX(339, 92, 'COPY INTO');
+      g += `<g class="c-teal"><rect class="box" x="420" y="20" width="240" height="170" rx="10"/></g>` + TX(540, 40, 'orders', 'middle', 'th');
+      (after ? fileCols : fileCols.slice(0, 3)).forEach((c, i) => { const isNew = c === 'email'; g += `<g class="c-${isNew ? 'amber' : 'teal'}"><rect class="inner" x="440" y="${58 + i * 30}" width="200" height="24" rx="6"/>${TX(540, 70 + i * 30, isNew ? 'email (added)' : c)}</g>`; });
+      return seg('m', s.m, [['before', 'Schema evolution off'], ['after', 'Schema evolution on']]) + SV(210, g) +
+        `<p class="mini">${after ? 'ENABLE_SCHEMA_EVOLUTION = TRUE: Snowflake adds the email column automatically during the load.' : 'Off: the new email column is ignored (with MATCH_BY_COLUMN_NAME), or the load fails on a column-count mismatch.'}</p>`;
+    },
+    body: code(`ALTER TABLE orders ADD COLUMN discount NUMBER(5,2);   -- instant, metadata only\nALTER TABLE orders RENAME COLUMN city TO town;\n\nALTER TABLE orders SET ENABLE_SCHEMA_EVOLUTION = TRUE;\nCOPY INTO orders FROM @ext_stage\n  FILE_FORMAT = (TYPE = 'PARQUET')\n  MATCH_BY_COLUMN_NAME = CASE_INSENSITIVE;\n\n-- Create a table straight from file structure\nCREATE TABLE orders2 USING TEMPLATE (\n  SELECT ARRAY_AGG(OBJECT_CONSTRUCT(*))\n  FROM TABLE(INFER_SCHEMA(LOCATION => '@ext_stage', FILE_FORMAT => 'parquet_fmt')));`) +
+      ul([`Automatic schema evolution works with COPY and Snowpipe for Parquet, Avro, ORC, JSON and CSV files.`,
+        `There's no built-in "version history" of a table's structure. For history, use Time Travel (<code>AT</code> / <code>BEFORE</code>), clones as snapshots, ACCOUNT_USAGE query history, and keep DDL in Git.`]),
+    say: `Most schema changes, such as ADD COLUMN, are instant metadata operations. For loads, I turn on ENABLE_SCHEMA_EVOLUTION and use MATCH_BY_COLUMN_NAME so new columns in incoming files are added automatically. INFER_SCHEMA can build the table from the files themselves.`,
+    fix: `Q41 implies Snowflake has object "versioning" that tracks every change. It doesn't. History comes from Time Travel, cloning and query history, while DDL versioning belongs in Git.` },
+
+  /* ===== Security & sharing ===== */
+  { id: 'security', g: 4, q: [9], short: 'Security layers', title: 'How Snowflake secures data',
+    lead: `Think of security as rings around your data. Click a ring.`,
+    s: { k: 4 },
+    view(s) {
+      let g = '';
+      SEC.forEach((r, i) => { const x = 20 + i * 36, y = 10 + i * 26, w = 640 - i * 72, h = 320 - i * 52;
+        g += `<g class="c-${r[1]} layer" data-act="k:${i}"><rect class="box" x="${x}" y="${y}" width="${w}" height="${h}" rx="12"${+s.k === i ? ' stroke-width="2.5"' : ''}/><text class="th" x="${x + 14}" y="${y + 14}" dominant-baseline="central" style="font-size:12px">${i + 1}. ${r[0]}</text></g>`; });
+      g += B(260, 156, 160, 50, 'gray', 'Your data');
+      const r = SEC[+s.k];
+      return SV(340, g) + `<div class="panel"><h3>${+s.k + 1}. ${r[0]}</h3><p>${r[2]}</p></div>`;
+    },
+    body: code(`CREATE NETWORK POLICY office_only ALLOWED_IP_LIST = ('203.0.113.0/24');\nALTER ACCOUNT SET NETWORK_POLICY = office_only;`),
+    say: `Security works in layers. Network policies and private connectivity control where connections come from. MFA, SSO and key-pair authentication confirm identity. RBAC controls what each role can do. Masking and row access policies control what values each role sees. Everything is encrypted with AES-256 at rest and TLS in transit, with automatic key rotation.`,
+    fix: `The article's answer to Q9 ("How does Snowflake ensure data security?") is actually about <b>data sharing</b>. Use the layered answer above.` },
+
+  { id: 'rbac', g: 4, q: [52], short: 'RBAC roles', title: 'Role-based access control (RBAC)',
+    lead: `Privileges go to <b>roles</b>, and roles go to <b>users</b>. Roles are granted to other roles, forming a hierarchy. A parent inherits everything its children can do.`,
+    body: SV(320,
+        B(20, 14, 170, 56, 'gray', 'ORGADMIN', 'manages accounts') +
+        B(260, 20, 160, 44, 'purple', 'ACCOUNTADMIN') + LN(340, 64, 180, 100) + LN(340, 64, 500, 100) +
+        B(100, 100, 160, 44, 'purple', 'SECURITYADMIN') + B(420, 100, 160, 44, 'teal', 'SYSADMIN') +
+        LN(180, 144, 180, 180) + LN(500, 144, 425, 180) + LN(500, 144, 575, 180) +
+        B(100, 180, 160, 44, 'purple', 'USERADMIN') + B(360, 180, 130, 44, 'teal', 'ANALYST') + B(510, 180, 130, 44, 'teal', 'ENGINEER') +
+        LN(180, 224, 300, 260, true) + LN(425, 224, 360, 260, true) + LN(575, 224, 400, 260, true) +
+        B(260, 260, 160, 44, 'gray', 'PUBLIC')) +
+      tbl(['Role', 'Job'], [
+        ['ACCOUNTADMIN', 'top of the account; use rarely, protect with MFA'],
+        ['SECURITYADMIN', 'manages grants (MANAGE GRANTS)'],
+        ['USERADMIN', 'creates users and roles'],
+        ['SYSADMIN', 'creates warehouses, databases and other objects; custom roles roll up to it'],
+        ['PUBLIC', 'granted to everyone automatically']]) +
+      code(`CREATE ROLE analyst;\nGRANT USAGE  ON WAREHOUSE wh_bi            TO ROLE analyst;\nGRANT USAGE  ON DATABASE sales             TO ROLE analyst;\nGRANT USAGE  ON SCHEMA sales.public        TO ROLE analyst;\nGRANT SELECT ON ALL TABLES IN SCHEMA sales.public TO ROLE analyst;\nGRANT ROLE analyst TO USER saurav;\nGRANT ROLE analyst TO ROLE sysadmin;     -- best practice: roll up to SYSADMIN`) +
+      ul([`Common gotcha: SELECT alone isn't enough. A role also needs <b>USAGE</b> on the warehouse, database and schema.`,
+        `Every object has exactly one <b>owner role</b>, which holds all privileges on it.`]),
+    say: `Snowflake uses RBAC: privileges are granted to roles, roles to users, and roles can be granted to other roles. The system roles are ACCOUNTADMIN, SECURITYADMIN, USERADMIN, SYSADMIN and PUBLIC. Custom roles should roll up to SYSADMIN, and ACCOUNTADMIN shouldn't be used for daily work.` },
+
+  { id: 'gov', g: 4, q: [18, 52], short: 'Governance & audit', title: 'Data governance and auditing',
+    lead: `Governance controls <b>who sees what</b>, and auditing shows <b>who did what</b>. Switch roles to see masking and row access policies at work.`,
+    s: { r: 'analyst' },
+    view(s) {
+      const hr = s.r === 'hr';
+      const rows = PEOPLE.filter(p => hr || p[2] === 'India').map(p => [p[0], hr ? p[1] : '*****@' + p[1].split('@')[1], p[2], hr ? p[3] : '****']);
+      return seg('r', s.r, [['analyst', 'Role: ANALYST_INDIA'], ['hr', 'Role: HR_ADMIN']]) +
+        `<div class="mini">SELECT * FROM customers;</div>` + tbl(['name', 'email', 'region', 'salary'], rows) +
+        `<p class="mini">${hr ? 'HR_ADMIN sees every row and real values.' : 'Row access policy: only India rows. Masking policy: email and salary hidden. Same table, same query.'}</p>`;
+    },
+    body: code(`CREATE MASKING POLICY email_mask AS (val STRING) RETURNS STRING ->\n  CASE WHEN IS_ROLE_IN_SESSION('HR_ADMIN') THEN val\n       ELSE '*****@' || SPLIT_PART(val, '@', 2) END;\nALTER TABLE customers MODIFY COLUMN email SET MASKING POLICY email_mask;\n\nCREATE ROW ACCESS POLICY region_rap AS (region STRING) RETURNS BOOLEAN ->\n  IS_ROLE_IN_SESSION('HR_ADMIN')\n  OR (IS_ROLE_IN_SESSION('ANALYST_INDIA') AND region = 'India');\nALTER TABLE customers ADD ROW ACCESS POLICY region_rap ON (region);\n\n-- Audit: who read what in the last 7 days\nSELECT user_name, query_start_time, direct_objects_accessed\nFROM snowflake.account_usage.access_history\nWHERE query_start_time > DATEADD(day, -7, CURRENT_TIMESTAMP());`) +
+      tbl(['Governance tool', 'What it does'], [
+        ['Masking policy', 'hides or partly shows column values by role (Enterprise)'],
+        ['Row access policy', 'filters which rows a role sees (Enterprise)'],
+        ['Object tags', 'label columns, e.g. PII, and attach policies to the tag'],
+        ['Data classification', 'detects sensitive columns automatically'],
+        ['ACCESS_HISTORY', 'which user read or wrote which columns (Enterprise)'],
+        ['QUERY_HISTORY / LOGIN_HISTORY', 'every query and every login attempt']]) +
+      ul([`ACCOUNT_USAGE views keep 1 year of history but can lag by up to a few hours. INFORMATION_SCHEMA table functions are real time but cover a shorter window.`]),
+    say: `For governance I use RBAC plus masking policies for sensitive columns, row access policies for row-level security, and tags to classify PII and apply policies at scale. For auditing I query SNOWFLAKE.ACCOUNT_USAGE: ACCESS_HISTORY for who touched which columns, and QUERY_HISTORY and LOGIN_HISTORY for activity.` },
+
+  { id: 'share', g: 4, q: [10, 16, 44], short: 'Data sharing types', title: 'Secure data sharing and its types',
+    lead: `A share is a set of <b>grants</b>, not a copy. Consumers query the provider's live data with their own compute.`,
+    body: SV(230,
+        `<g class="c-coral"><rect class="box" x="20" y="20" width="220" height="190" rx="12"/></g>` + TX(130, 42, 'Provider account', 'middle', 'th') +
+        `<g class="c-coral"><rect class="inner" x="40" y="66" width="180" height="40" rx="8"/>${TX(130, 86, 'table · sales.orders')}<rect class="inner" x="40" y="120" width="180" height="40" rx="8"/>${TX(130, 140, 'secure view')}</g>` +
+        TX(130, 186, 'stores the data, pays storage') +
+        A(240, 115, 276, 115) + B(280, 85, 120, 60, 'purple', 'Share', 'grants only') +
+        A(400, 105, 436, 64) + A(400, 125, 436, 166) +
+        B(440, 20, 220, 85, 'teal', 'Consumer account', 'own warehouse, read-only db') +
+        B(440, 125, 220, 85, 'amber', 'Reader account', 'provider pays its compute')) +
+      tbl(['Type', 'How it works'], [
+        ['Direct share', 'account to account in the <b>same region</b>, using a share object'],
+        ['Listing', 'a share packaged as a product with a description and terms. Private (chosen accounts) or public on <b>Snowflake Marketplace</b>. Works across regions with auto-fulfillment.'],
+        ['Data Exchange', 'a private hub where a group of accounts publish and discover shares; private listings now cover most of this'],
+        ['Reader account', 'for partners without Snowflake: the provider creates and pays for it']]) +
+      code(`-- Provider\nCREATE SHARE sales_share;\nGRANT USAGE  ON DATABASE sales              TO SHARE sales_share;\nGRANT USAGE  ON SCHEMA sales.public         TO SHARE sales_share;\nGRANT SELECT ON TABLE sales.public.orders   TO SHARE sales_share;\nALTER SHARE sales_share ADD ACCOUNTS = partner_org.partner_acct;\n\n-- Consumer\nCREATE DATABASE partner_sales FROM SHARE provider_org.provider_acct.sales_share;`) +
+      ul([`Shared data is live and read-only. Changes are visible to consumers immediately.`,
+        `Only <b>secure</b> views can be shared, not standard views.`,
+        `Consumers can't re-share the data. Sharing across regions needs replication or a listing.`]),
+    say: `Secure data sharing gives another account live, read-only access to my tables and secure views without copying data: a share is just grants on my storage. The consumer pays for their own compute. Options are direct shares in the same region, listings (private or on Marketplace), and reader accounts for non-Snowflake partners.` },
+
+  /* ===== Cost & platform ===== */
+  { id: 'cost', g: 5, q: [29, 51], short: 'Cost & resource monitors', title: 'Controlling compute cost with resource monitors',
+    lead: `A resource monitor watches credit usage and acts at thresholds. Drag the slider to spend this month's 100-credit quota.`,
+    s: { p: 60 },
+    controls: `<div class="row"><label>Credits used this month</label><input type="range" min="0" max="120" step="1" value="60" data-inp="p"></div>`,
+    view(s) {
+      const p = +s.p, X = v => 40 + v / 120 * 600;
+      const c = p >= 100 ? 'coral' : p >= 75 ? 'amber' : 'teal';
+      let g = `<g class="c-gray"><rect class="box" x="40" y="50" width="600" height="24" rx="6"/></g><g class="c-${c}"><rect class="box" x="40" y="50" width="${Math.max(2, X(p) - 40)}" height="24" rx="6" style="fill:var(--s)"/></g>`;
+      [[75, '75%: notify', 36], [90, '90%: suspend', 94], [100, '100%: suspend now', 36]].forEach(m => { g += LN(X(m[0]), 44, X(m[0]), 80) + TX(X(m[0]), m[2], m[1]); });
+      g += TX(40, 94, '0', 'start') + TX(640, 94, '120', 'end');
+      const msg = p < 75 ? `Running normally: ${p} of 100 credits used.`
+        : p < 90 ? `<b>NOTIFY:</b> admins get an email. The warehouse keeps running.`
+        : p < 100 ? `<b>SUSPEND:</b> no new queries start. Queries already running are allowed to finish.`
+        : `<b>SUSPEND_IMMEDIATE:</b> running queries are cancelled and the warehouse stops right away. It stays suspended until the quota resets, is raised, or the monitor is removed.`;
+      return SV(110, g) + `<div class="panel"><p>${msg}</p></div>`;
+    },
+    body: code(`CREATE RESOURCE MONITOR bi_monitor WITH\n  CREDIT_QUOTA = 100\n  FREQUENCY = MONTHLY\n  START_TIMESTAMP = IMMEDIATELY\n  TRIGGERS ON 75  PERCENT DO NOTIFY\n           ON 90  PERCENT DO SUSPEND\n           ON 100 PERCENT DO SUSPEND_IMMEDIATE;\n\nALTER WAREHOUSE wh_bi SET RESOURCE_MONITOR = bi_monitor;`) +
+      ul([`Created by ACCOUNTADMIN. Set at account level or per warehouse (one monitor per warehouse).`,
+        `They only control <b>warehouses</b>. Serverless features (Snowpipe, automatic clustering) are tracked with <b>budgets</b> instead.`,
+        `Usage can slightly overshoot 100%, because queries that are already running still consume credits.`]) +
+      tbl(['Cost lever', 'How'], [
+        ['Auto-suspend', 'AUTO_SUSPEND = 60 seconds, plus AUTO_RESUME = TRUE'],
+        ['Right size', 'start small; scale up only if Query Profile shows spilling'],
+        ['Separate warehouses', 'one per workload, so each can be sized and tracked'],
+        ['Cap scale-out', 'multi-cluster MAX_CLUSTER_COUNT and the ECONOMY scaling policy'],
+        ['Stop runaway queries', 'STATEMENT_TIMEOUT_IN_SECONDS on the warehouse'],
+        ['Cheaper storage', 'transient tables for staging; shorter Time Travel on high-churn tables'],
+        ['Watch usage', 'ACCOUNT_USAGE.WAREHOUSE_METERING_HISTORY']]),
+    say: `I cap warehouse spend with resource monitors: a credit quota per period, with triggers that notify, suspend, or suspend immediately. Day to day, I use 60-second auto-suspend, right-sized and separated warehouses, capped multi-cluster scaling, statement timeouts, and regular checks of metering history.`,
+    fix: `Q51 says the actions include "shutting them down". The three actions are exactly <b>NOTIFY</b>, <b>SUSPEND</b> and <b>SUSPEND_IMMEDIATE</b>.` },
+
+  { id: 'editions', g: 5, q: [13], short: 'Editions', title: 'Snowflake editions',
+    lead: `Each edition includes everything below it and adds more.`,
+    body: SV(270,
+        [[20, 70, 'gray', 'Standard', 'core platform'], [185, 110, 'teal', 'Enterprise', '+ scale & governance'], [350, 150, 'purple', 'Business Critical', '+ compliance & DR'], [515, 190, 'coral', 'VPS', '+ own isolated setup']]
+          .map(e => `<g class="c-${e[2]}"><rect class="box" x="${e[0]}" y="${250 - e[1]}" width="150" height="${e[1]}" rx="8"/>${TX(e[0] + 75, 250 - e[1] + 22, e[3], 'middle', 'th')}${TX(e[0] + 75, 250 - e[1] + 42, e[4])}</g>`).join('')) +
+      tbl(['Edition', 'Adds (key points)'], [
+        ['Standard', 'full SQL warehouse, Time Travel up to 1 day, encryption everywhere, MFA, SSO, data sharing, Snowpipe'],
+        ['Enterprise', 'multi-cluster warehouses, Time Travel up to 90 days, materialized views, search optimization, masking and row access policies, ACCESS_HISTORY'],
+        ['Business Critical', 'HIPAA and PCI DSS support, Tri-Secret Secure (your own key), private connectivity, account failover and failback'],
+        ['Virtual Private Snowflake', 'a completely separate Snowflake environment, isolated from other customers']]),
+    say: `There are four editions. Standard is the core platform. Enterprise adds multi-cluster warehouses, 90-day Time Travel, materialized views and governance policies. Business Critical adds compliance support, customer-managed keys, private connectivity and failover. VPS is a fully isolated environment.`,
+    fix: `Q13 says Enterprise "adds multi-factor authentication and data encryption". MFA and encryption are in <b>every</b> edition. It also calls Standard "a beginner-level course", which is a slip in the article.` },
+
+  { id: 'hadr', g: 5, q: [33], short: 'HA & DR', title: 'High availability and disaster recovery',
+    lead: `There are two levels: automatic protection inside a region, and replication across regions that <b>you set up</b>.`,
+    body: SV(240,
+        `<g class="c-gray"><rect class="box" x="20" y="20" width="410" height="200" rx="12"/></g>` + TX(225, 42, 'Primary region · e.g. AWS us-west-2', 'middle', 'th') +
+        B(40, 66, 115, 110, 'teal', 'Zone 1', 'full copy') + B(167, 66, 115, 110, 'teal', 'Zone 2', 'full copy') + B(294, 66, 115, 110, 'teal', 'Zone 3', 'full copy') +
+        TX(225, 200, 'automatic and synchronous inside the region') +
+        A(432, 120, 486, 120, true) + B(490, 70, 170, 100, 'coral', 'Secondary', 'other region or cloud') + TX(575, 190, 'replication you configure')) +
+      tbl(['Risk', 'Protection'], [
+        ['A server or availability zone fails', 'automatic: storage is replicated across 3 zones, and compute moves to healthy ones'],
+        ['A whole region goes down', 'database or account replication with failover groups (failover needs Business Critical)'],
+        ['Someone deletes or corrupts data', 'Time Travel and UNDROP, then Fail-safe'],
+        ['Apps need to switch regions', 'Client Redirect: one connection URL that can point to the secondary']]) +
+      code(`CREATE FAILOVER GROUP sales_fg\n  OBJECT_TYPES = DATABASES, ROLES, WAREHOUSES\n  ALLOWED_DATABASES = sales\n  ALLOWED_ACCOUNTS = myorg.dr_account\n  REPLICATION_SCHEDULE = '10 MINUTE';`),
+    say: `Within a region, Snowflake is highly available automatically: data is synchronously stored across three availability zones. For disaster recovery, I set up replication and failover groups to another region or cloud on a schedule, and use Client Redirect so apps can fail over. Time Travel and Fail-safe protect against human error.`,
+    fix: `Q33 says cross-region replication "is done systematically and transparently". Only the <b>in-region</b> protection is automatic. Cross-region replication must be configured, and you pay for the data transfer and compute.` },
+
+  { id: 'region', g: 5, q: [17, 45, 54], short: 'Cloud & region choice', title: 'Choosing a cloud and region',
+    lead: `Each Snowflake account lives in <b>one cloud and one region</b>. An organisation can have many accounts.`,
+    body: SV(140, [['AWS', ['us-west-2 · Oregon', 'eu-west-1 · Ireland', 'ap-south-1 · Mumbai']], ['Azure', ['East US 2', 'West Europe', 'Central India']], ['Google Cloud', ['us-central1 · Iowa', 'europe-west2 · London', '']]]
+        .map((c, i) => { const x = 20 + i * 220; return `<g class="c-${['coral', 'teal', 'purple'][i]}"><rect class="box" x="${x}" y="16" width="200" height="110" rx="10"/>${TX(x + 100, 38, c[0], 'middle', 'th')}${c[1].map((r, j) => TX(x + 100, 64 + j * 20, r)).join('')}</g>`; }).join('')) +
+      `<p class="mini">Examples only. Each cloud has many more regions.</p>` +
+      tbl(['Factor', 'Why it matters'], [
+        ['Data residency and compliance', 'some data legally has to stay in a country'],
+        ['Close to your data sources', 'avoids cross-cloud egress costs and latency'],
+        ['Close to users and tools', 'faster dashboards'],
+        ['Feature availability', 'some features arrive in some regions first'],
+        ['Price', 'credit and storage prices vary by region and edition'],
+        ['Disaster recovery', 'pick a secondary region for replication'],
+        ['Existing cloud contracts', 'for example, buying through AWS Marketplace']]) +
+      ul([`<b>Snowflake on AWS</b> (Q54): data is stored in S3, compute runs on Snowflake-managed EC2, and it integrates with S3 stages, PrivateLink and IAM-based storage integrations. Pricing is per second.`]),
+    say: `Snowflake runs on AWS, Azure and Google Cloud, and each account sits in one cloud region. I'd choose based on data residency rules, where the source data already lives (to avoid egress cost and latency), user location, feature availability, price, and which region would be the DR secondary.` },
+
+  { id: 'redshift', g: 5, q: [25], short: 'vs Redshift', title: 'Snowflake vs Amazon Redshift',
+    lead: `A fair, up-to-date comparison. Interviewers notice when an answer is ten years old.`,
+    body: tbl(['', 'Snowflake', 'Redshift'], [
+      ['Clouds', 'AWS, Azure, Google Cloud', 'AWS only'],
+      ['Storage and compute', 'fully separate; many warehouses on one copy of data', 'separate with RA3 nodes and Serverless; provisioned clusters are still sized in nodes'],
+      ['Concurrency', 'multi-cluster warehouses, isolated per team', 'concurrency scaling, workload management queues'],
+      ['Tuning', 'almost none: no distribution or sort keys, no vacuum', 'distribution and sort keys (automatic options exist), auto vacuum and analyze'],
+      ['Semi-structured', 'VARIANT with path queries and FLATTEN', 'SUPER type with PartiQL'],
+      ['Pricing', 'credits per second per warehouse + storage', 'per node-hour, or RPU-hours on Serverless; reserved instances'],
+      ['Recovery and copies', 'Time Travel, UNDROP, zero-copy cloning', 'snapshots and restore'],
+      ['Sharing', 'cross-account, cross-region, Marketplace', 'data sharing between Redshift clusters and accounts']]),
+    say: `The big differences: Snowflake is multi-cloud, needs almost no tuning, and gives each workload its own isolated warehouse on the same data, with Time Travel and zero-copy cloning built in. Redshift is AWS-native, integrates tightly with AWS services, and offers more tuning knobs such as distribution and sort keys.`,
+    fix: `Q25 says Redshift combines compute and storage and can't automate vacuuming. That was true of old node types. Modern Redshift (RA3 and Serverless) separates storage, and it runs automatic vacuum and analyze.` },
+
+  /* ===== Tools ===== */
+  { id: 'tools', g: 6, q: [31, 46, 49, 50, 53, 55, 56], short: 'Access, connectors & ETL', title: 'Ways to connect: UI, CLI, drivers, connectors and ETL tools',
+    lead: `Everything talks to Snowflake over the same SQL interface.`,
+    body: SV(296,
+        B(270, 120, 140, 56, 'teal', 'Snowflake', 'ANSI SQL') +
+        LN(200, 44, 270, 130) + LN(480, 44, 410, 130) + LN(200, 148, 270, 148) + LN(480, 148, 410, 148) + LN(200, 252, 270, 166) + LN(480, 252, 410, 166) +
+        B(20, 20, 180, 48, 'purple', 'Snowsight', 'web UI') + B(480, 20, 180, 48, 'purple', 'SnowSQL / CLI', 'command line') +
+        B(20, 124, 180, 48, 'coral', 'Drivers', 'JDBC · ODBC · Python') + B(480, 124, 180, 48, 'coral', 'Snowpark', 'Python · Java · Scala') +
+        B(20, 228, 180, 48, 'amber', 'Connectors', 'Kafka · Spark') + B(480, 228, 180, 48, 'amber', 'ETL / BI tools', 'dbt · Airflow · Tableau')) +
+      tbl(['Question', 'Short answer'], [
+        ['Q49: how can you access Snowflake?', 'Snowsight (web UI), SnowSQL or Snowflake CLI, JDBC/ODBC, connectors for Python, Node.js, Go and .NET, Snowpark, plus partner tools'],
+        ['Q53: what SQL does it use?', 'ANSI-standard SQL plus extensions: QUALIFY, FLATTEN, VARIANT paths, MERGE, Time Travel AT / BEFORE'],
+        ['Q55: SnowSQL?', 'a command-line client: interactive, or batch with snowsql -f script.sql; does PUT/GET for internal stages. The newer Snowflake CLI (snow) is replacing it'],
+        ['Q56: connectors?', 'Kafka connector (topics into tables via Snowpipe or Snowpipe Streaming), Spark connector (reads and writes, pushes filters down), Python connector'],
+        ['Q46: can AWS Glue connect?', 'yes: a native Glue Snowflake connection, or the JDBC driver or Spark connector in a Glue job'],
+        ['Q50 / Q31: ETL tools?', 'Informatica, Matillion, Fivetran, Talend, dbt, Airflow, Hevo, Stitch and others connect through drivers and partner connectors']]) +
+      code(`snowsql -a myorg-myaccount -u saurav -f daily_load.sql      # SnowSQL batch run\nsnow sql -q "SELECT CURRENT_VERSION()"                    # Snowflake CLI`),
+    say: `You can work in Snowsight, run scripts from the command line with SnowSQL or the newer Snowflake CLI, connect apps through JDBC, ODBC or language connectors, build DataFrame pipelines with Snowpark, and stream data in with the Kafka connector. Snowflake speaks ANSI SQL with extensions like QUALIFY and FLATTEN.`,
+    fix: `Q31 says "Data Exchange has removed the long ETL and FTP process". Data Exchange is a <b>sharing</b> feature. ETL tools connect through drivers and partner connectors. Q55's "(now SQL executable)" is garbled: the successor is <b>Snowflake CLI</b>.` }
+];
+
+/* ---------- Topics engine ---------- */
+const byId = Object.fromEntries(TOPICS.map(t => [t.id, t]));
+const EARLIER = { 1: 'v1', 2: 'v1', 3: 'v5', 4: 'v3', 5: 'v1', 8: 'v5', 11: 'v4', 21: 'v1', 22: 'v5', 23: 'v5', 26: 'v5', 34: 'v3', 36: 'v1', 37: 'v1', 42: 'v5', 48: 'v4' };
+const TABNAME = { v1: 'Tab 1 · Three layers', v3: 'Tab 3 · Storage vs compute', v4: 'Tab 4 · Caches', v5: 'Tab 5 · Features' };
+function showTopic(id) {
+  const t = byId[id];
+  document.getElementById('grpBar').innerHTML = GROUPS.map((g, i) => `<button class="${i === t.g ? 'on' : ''}" data-g="${i}">${g}</button>`).join('');
+  document.getElementById('topicBar').innerHTML = TOPICS.filter(x => x.g === t.g)
+    .map(x => `<button class="btn${x.id === id ? ' on' : ''}" data-t="${x.id}">${x.short}${x.fix ? '<span class="dotfix"></span>' : ''}</button>`).join('');
+  const p = document.getElementById('topicPanel');
+  p.innerHTML = `<div class="panel"><span class="tag">Article Q${t.q.join(', Q')}</span><h3>${t.title}</h3><p>${t.lead}</p><div class="vis"></div>${t.controls || ''}${t.body || ''}` +
+    `${t.say ? `<div class="say"><b>Say this in the interview:</b> ${t.say}</div>` : ''}${t.fix ? `<div class="fix"><b>Correction to the article:</b> ${t.fix}</div>` : ''}</div>`;
+  drawVis(t);
+  p.querySelectorAll('[data-inp]').forEach(el => el.addEventListener('input', () => { t.s[el.dataset.inp] = +el.value; drawVis(t); }));
+}
+function drawVis(t) {
+  const v = document.querySelector('#topicPanel .vis');
+  if (!t.view) { v.style.display = 'none'; return; }
+  v.innerHTML = t.view(t.s);
+  v.querySelectorAll('[data-act]').forEach(el => el.addEventListener('click', () => {
+    const [k, val] = el.dataset.act.split(':');
+    if (t.act) t.act(t.s, k, val); else t.s[k] = val;
+    drawVis(t);
+  }));
+}
+document.getElementById('grpBar').addEventListener('click', e => { const b = e.target.closest('[data-g]'); if (b) showTopic(TOPICS.find(x => x.g === +b.dataset.g).id); });
+document.getElementById('topicBar').addEventListener('click', e => { const b = e.target.closest('[data-t]'); if (b) showTopic(b.dataset.t); });
+const qj = document.getElementById('qJump');
+let qopts = '<option value="">Choose a question…</option>';
+for (let n = 1; n <= 59; n++) {
+  const t = TOPICS.find(x => x.q.includes(n));
+  qopts += t ? `<option value="t:${t.id}">Q${n} → ${t.short}</option>` : EARLIER[n] ? `<option value="v:${EARLIER[n]}">Q${n} → ${TABNAME[EARLIER[n]]}</option>` : '';
+}
+qj.innerHTML = qopts;
+qj.addEventListener('change', () => {
+  const [kind, id] = qj.value.split(':'); if (!id) return;
+  if (kind === 'v') showView(id); else showTopic(id);
+  qj.value = '';
+});
+showTopic('stages');
+
+/* ---------- Cheat sheet: corrections ---------- */
+const FIXES = [
+  ['Q7', 'External stage data is "outside a cloud system"', 'An external stage points to your own cloud bucket; an internal stage uses Snowflake-managed storage.'],
+  ['Q8', 'Time Travel is "mainly 90 days"', 'Default is 1 day. Up to 90 days only on Enterprise and above, for permanent objects.'],
+  ['Q9', 'The security answer describes data sharing', 'Network policies, MFA/SSO/key-pair auth, RBAC, masking and row policies, AES-256 at rest, TLS in transit.'],
+  ['Q13', 'Enterprise adds MFA and encryption', 'MFA and encryption are in every edition. Enterprise adds multi-cluster, 90-day Time Travel, MVs, masking, search optimization.'],
+  ['Q15', 'PK/FK constraints in the DDL', 'Snowflake does not enforce primary or foreign keys on standard tables; only NOT NULL.'],
+  ['Q25', 'Redshift combines compute and storage, no auto vacuum', 'Out of date: RA3 and Serverless separate storage, and Redshift runs auto vacuum and analyze.'],
+  ['Q28, Q57', 'Snowflake uses indexes internally', 'Standard tables have no indexes. Speed comes from pruning with micro-partition metadata.'],
+  ['Q30', 'Streams use DML to change tables', 'Streams record changes made by DML (change data capture).'],
+  ['Q31', 'Data Exchange replaced ETL', 'Data Exchange is a sharing feature; ETL tools connect through drivers and connectors.'],
+  ['Q33', 'Cross-region replication is automatic', 'Only in-region (3 zones) is automatic. Cross-region replication and failover must be configured.'],
+  ['Q47', 'Snowflake deduplicates automatically', 'It doesn\'t. Use QUALIFY ROW_NUMBER() or MERGE. COPY only skips files it already loaded.'],
+  ['Q51', 'Monitors can "shut" warehouses', 'Actions are NOTIFY, SUSPEND and SUSPEND_IMMEDIATE.'],
+  ['Q55', 'SnowSQL "(now SQL executable)"', 'The newer CLI is Snowflake CLI (snow).'],
+  ['Q58', 'create temporary table table name (...)', 'Table names can\'t contain spaces unless quoted: CREATE TEMPORARY TABLE tmp_orders (...).'],
+  ['Q59', 'Procedure = run SQL, fetch results, fetch metadata', 'That\'s a driver. Procedures are created with CREATE PROCEDURE and run with CALL.']
+];
+document.getElementById('fixTable').innerHTML = tbl(['Question', 'Article says', 'Correct answer'], FIXES);
+
+/* ---------- Cheat sheet: flashcards + quiz ---------- */
+const CARDS = [
+  ['Article traps', 1, 'Trap (Q47): Does Snowflake remove duplicate rows automatically?', 'No. Duplicate rows load fine, and PRIMARY KEY / UNIQUE are not enforced. COPY only skips files it already loaded. Dedupe with QUALIFY ROW_NUMBER() or MERGE.'],
+  ['Article traps', 1, 'Trap (Q28, Q57): Does Snowflake use indexes internally?', 'No. Standard tables have no indexes. Snowflake prunes micro-partitions using min/max metadata. Clustering keys and search optimization help further.'],
+  ['Article traps', 1, 'Trap (Q8): Is Time Travel 90 days?', 'The default is 1 day. Up to 90 days only on Enterprise and above, for permanent objects. Transient and temporary tables: 1 day maximum.'],
+  ['Article traps', 1, 'Trap (Q9): How does Snowflake secure data? (The article answers with data sharing.)', 'In layers: network policies, MFA / SSO / key-pair authentication, RBAC, masking and row access policies, AES-256 encryption at rest, TLS in transit.'],
+  ['Article traps', 1, 'Trap (Q33): Is cross-region replication automatic?', 'No. Only in-region protection across 3 availability zones is automatic. Cross-region needs replication and failover groups that you configure (failover needs Business Critical).'],
+  ['Article traps', 0, 'Trap (Q13): Are MFA and encryption Enterprise-only features?', 'No, they are in every edition. Enterprise adds multi-cluster warehouses, 90-day Time Travel, materialized views, masking and search optimization.'],
+  ['Article traps', 0, 'Trap (Q30): Do streams make changes with DML?', 'No. Streams record the changes that DML makes (change data capture). Tasks then consume them.'],
+  ['Article traps', 0, 'Trap (Q51): Can a resource monitor "shut down" a warehouse?', 'Its three actions are NOTIFY, SUSPEND (running queries finish) and SUSPEND_IMMEDIATE (running queries are cancelled).'],
+  ['Article traps', 0, 'Trap (Q15): Are PRIMARY KEY and FOREIGN KEY enforced?', 'No, they are informational only. Just NOT NULL is enforced. Hybrid tables are the exception.'],
+  ['Article traps', 0, 'Trap (Q7): Is an external stage "outside the cloud"?', 'No. It points to your own S3, Azure or GCS bucket. An internal stage uses Snowflake-managed storage.'],
+  ['Article traps', 0, 'Trap (Q25): Does Redshift still combine storage and compute?', 'Not with RA3 nodes or Serverless, and it now runs automatic vacuum and analyze. The real differences: AWS-only and more tuning knobs.'],
+  ['Article traps', 0, 'Trap (Q31): Did Data Exchange replace ETL tools?', 'No. Data Exchange is a data sharing hub. ETL tools connect through drivers and connectors.'],
+  ['Article traps', 0, 'Trap (Q55): What is replacing SnowSQL?', 'Snowflake CLI (the snow command). The article\'s "SQL executable" is wrong.'],
+  ['Article traps', 0, 'Trap (Q58): Is "create temporary table table name (...)" valid?', 'No. Names can\'t contain spaces unless quoted. Write CREATE TEMPORARY TABLE tmp_orders (...).'],
+  ['Article traps', 0, 'Trap (Q59): How do you run a stored procedure?', 'Create it with CREATE PROCEDURE, then run it with CALL proc(args). The article\'s steps describe what a driver does.'],
+  ['Architecture', 1, 'Name the three layers.', 'Cloud services (brain), compute / virtual warehouses (muscle), storage (pantry).'],
+  ['Architecture', 1, 'What does separating storage and compute give you?', 'Independent scaling, workload isolation, many warehouses on one copy of data, and paying for compute only while it runs.'],
+  ['Architecture', 1, 'What is a virtual warehouse?', 'A compute cluster that runs queries. It holds no permanent data and can be resized, suspended and resumed.'],
+  ['Architecture', 1, 'Scale up vs scale out?', 'Up: a bigger size for heavy, complex queries. Out: multi-cluster warehouses for many concurrent users.'],
+  ['Architecture', 0, 'What does the cloud services layer do?', 'Authentication, access control, metadata, query optimisation, result cache, transactions. Billed only above 10% of daily warehouse credits.'],
+  ['Architecture', 0, 'Shared-disk or shared-nothing?', 'Hybrid: central shared storage plus MPP compute clusters.'],
+  ['Architecture', 0, 'Does suspending a warehouse lose data?', 'No. Data lives in storage. You just stop paying for compute.'],
+  ['Architecture', 0, 'How is compute billed?', 'Credits per second while running, with a 60-second minimum each time it starts.'],
+  ['Architecture', 0, 'Is Snowflake OLTP or OLAP?', 'OLAP: columnar and built for big analytical scans. Hybrid tables cover light transactional work.'],
+  ['Architecture', 0, 'Which clouds does Snowflake run on?', 'AWS, Azure and Google Cloud. Each account lives in one cloud region.'],
+  ['Performance', 1, 'What is a micro-partition?', 'An immutable, compressed, columnar chunk holding 50–500 MB of uncompressed data, with min/max metadata.'],
+  ['Performance', 1, 'What is pruning?', 'Skipping micro-partitions whose min/max metadata shows they can\'t match the filter.'],
+  ['Performance', 1, 'Name the three caches.', 'Result cache (cloud services, 24h), local disk cache (warehouse SSD, lost on suspend), metadata cache (COUNT, MIN, MAX).'],
+  ['Performance', 0, 'When does the result cache get reused?', 'Same query text, underlying data unchanged, same role access. Kept 24 hours from last use, up to 31 days.'],
+  ['Performance', 1, 'What is a clustering key and when do you use it?', 'Columns used to co-locate rows in micro-partitions. Use it on very large tables filtered by the same columns, e.g. a date.'],
+  ['Performance', 0, 'What is automatic clustering?', 'A serverless background service that reclusters a table as data changes. Non-blocking, but costs credits.'],
+  ['Performance', 1, 'Does Snowflake use indexes?', 'Not on standard tables. It prunes with metadata, and adds clustering, search optimization and query acceleration. Hybrid tables have indexes.'],
+  ['Performance', 0, 'What is the search optimization service?', 'An Enterprise feature that builds a search access path to speed up selective point lookups.'],
+  ['Performance', 1, 'How do you troubleshoot a slow query?', 'Query Profile: the hottest operator, partitions scanned vs total, spilling, exploding joins. Fix the SQL, then resize.'],
+  ['Performance', 0, 'Spilling to remote storage means what?', 'The warehouse ran out of memory and local disk. Scale up or reduce the data processed.'],
+  ['Performance', 0, 'Materialized view vs standard view?', 'An MV stores results and is refreshed automatically (Enterprise, one table, no joins). A view reruns its query every time.'],
+  ['Performance', 0, 'How does Snowflake stay consistent with many users?', 'ACID transactions, READ COMMITTED isolation, immutable micro-partitions with atomic metadata commits. Readers are never blocked.'],
+  ['Loading', 1, 'What is a stage? Name the types.', 'A file landing zone. Internal: user @~, table @%t, named @s. External: points to S3, Azure Blob or GCS.'],
+  ['Loading', 1, 'What is Snowpipe?', 'Serverless, event-driven continuous loading. It runs the pipe\'s COPY statement when a cloud event or REST call reports a new file.'],
+  ['Loading', 0, 'COPY INTO vs Snowpipe?', 'COPY: batch, uses your warehouse, 64-day load history. Snowpipe: continuous, serverless, 14-day load history.'],
+  ['Loading', 0, 'How does COPY avoid loading a file twice?', 'Load metadata remembers loaded files for 64 days. FORCE = TRUE overrides it.'],
+  ['Loading', 1, 'How do you handle JSON?', 'Load it into a VARIANT column, read fields with raw:path::TYPE, explode arrays with LATERAL FLATTEN.'],
+  ['Loading', 0, 'ETL or ELT on Snowflake?', 'Usually ELT: load raw data, then transform inside Snowflake with SQL, dbt, streams/tasks or dynamic tables.'],
+  ['Loading', 0, 'What is Snowpipe Streaming?', 'Row-level ingestion through an SDK or the Kafka connector with no files, for the lowest latency.'],
+  ['Tables & recovery', 1, 'Permanent vs transient vs temporary tables?', 'Permanent: up to 90d Time Travel + 7d Fail-safe. Transient: up to 1d, no Fail-safe. Temporary: same, but session-only.'],
+  ['Tables & recovery', 1, 'Time Travel vs Fail-safe?', 'Time Travel: you query or restore past data (1 day default, up to 90). Fail-safe: 7 more days, recoverable only by Snowflake Support.'],
+  ['Tables & recovery', 0, 'How do you restore a dropped table?', 'UNDROP TABLE orders; within the Time Travel period. Or clone it AT a timestamp.'],
+  ['Tables & recovery', 1, 'What is zero-copy cloning?', 'CREATE ... CLONE copies only metadata, so it\'s instant. New storage is used only for later changes.'],
+  ['Tables & recovery', 0, 'Star vs snowflake schema?', 'Star: denormalised dimensions, fewer joins, faster. Snowflake: normalised sub-dimensions, less redundancy, more joins.'],
+  ['Tables & recovery', 1, 'Are primary keys enforced?', 'No, only NOT NULL on standard tables. Hybrid tables do enforce primary keys.'],
+  ['Tables & recovery', 1, 'How do you remove duplicate rows?', 'QUALIFY ROW_NUMBER() OVER (PARTITION BY key ORDER BY ...) = 1, or MERGE to insert only new keys.'],
+  ['Pipelines', 1, 'What is a stream?', 'A change-tracking bookmark on a table. It returns inserts, updates and deletes since it was last consumed.'],
+  ['Pipelines', 1, 'What is a task?', 'Scheduled SQL or procedure (interval or CRON, or AFTER another task). It can be serverless, and it is created suspended.'],
+  ['Pipelines', 0, 'How do streams and tasks work together?', 'The task runs WHEN SYSTEM$STREAM_HAS_DATA(...) and merges only the changed rows.'],
+  ['Pipelines', 0, 'Stored procedure vs UDF?', 'Procedure: CALL it, can run DDL/DML with logic. UDF: used inside SELECT, returns a value per row.'],
+  ['Pipelines', 0, 'What is a dynamic table?', 'A table defined by a query plus a target lag. Snowflake refreshes it automatically.'],
+  ['Pipelines', 0, 'How does schema evolution work?', 'ENABLE_SCHEMA_EVOLUTION = TRUE plus MATCH_BY_COLUMN_NAME lets COPY or Snowpipe add new columns automatically.'],
+  ['Security & sharing', 1, 'How does Snowflake secure data?', 'Network policies, MFA/SSO/key-pair auth, RBAC, masking and row access policies, AES-256 at rest, TLS in transit.'],
+  ['Security & sharing', 1, 'Explain RBAC and the system roles.', 'Privileges go to roles, roles to users. ACCOUNTADMIN, SECURITYADMIN, USERADMIN, SYSADMIN, PUBLIC.'],
+  ['Security & sharing', 0, 'What does a role need to query a table?', 'USAGE on the warehouse, database and schema, plus SELECT on the table.'],
+  ['Security & sharing', 0, 'What is dynamic data masking?', 'A masking policy rewrites column values at query time based on the role (Enterprise).'],
+  ['Security & sharing', 0, 'What is a row access policy?', 'A policy that filters which rows each role can see.'],
+  ['Security & sharing', 0, 'How do you audit data access?', 'SNOWFLAKE.ACCOUNT_USAGE: ACCESS_HISTORY, QUERY_HISTORY, LOGIN_HISTORY.'],
+  ['Security & sharing', 1, 'What is secure data sharing?', 'Live, read-only access through grants, with no copy. The consumer uses their own warehouse.'],
+  ['Security & sharing', 0, 'Types of data sharing?', 'Direct share (same region), listings (private or Marketplace), Data Exchange, reader accounts.'],
+  ['Security & sharing', 0, 'Why use secure views for sharing?', 'Only secure views can be shared. They hide the definition and prevent data leaking through optimisations.'],
+  ['Cost & platform', 1, 'What is a resource monitor?', 'A credit quota per period on warehouses, with NOTIFY, SUSPEND and SUSPEND_IMMEDIATE triggers.'],
+  ['Cost & platform', 1, 'How do you control Snowflake costs?', 'Auto-suspend, right-sizing, separate warehouses, capped multi-cluster, timeouts, resource monitors, metering history.'],
+  ['Cost & platform', 0, 'Name the editions.', 'Standard, Enterprise, Business Critical, Virtual Private Snowflake.'],
+  ['Cost & platform', 0, 'How does Snowflake handle HA and DR?', 'Automatic replication across 3 zones in a region. Cross-region replication and failover groups that you configure.'],
+  ['Cost & platform', 0, 'Snowflake vs Redshift in one line?', 'Snowflake: multi-cloud, near-zero tuning, isolated warehouses. Redshift: AWS-native with more tuning knobs.'],
+  ['Cost & platform', 0, 'How do you choose a region?', 'Data residency, closeness to sources and users, feature availability, price, DR pairing.'],
+  ['SQL & tools', 1, 'What does QUALIFY do?', 'Filters on window function results, the way HAVING filters on aggregates. No CTE needed.'],
+  ['SQL & tools', 0, 'What SQL does Snowflake use?', 'ANSI SQL plus extensions like QUALIFY, FLATTEN, VARIANT paths, MERGE and Time Travel AT / BEFORE.'],
+  ['SQL & tools', 0, 'How can you connect to Snowflake?', 'Snowsight, SnowSQL or Snowflake CLI, JDBC/ODBC, Python and other connectors, Snowpark, Kafka and Spark connectors.']
+];
+/* ---------- Reusable flashcard deck + quiz ---------- */
+function setupDeck(cards, ids, priority, priorityLabel) {
+  const $ = k => document.getElementById(ids[k]);
+  const cats = ['All', ...new Set(cards.map(c => c[0]))];
+  let cat = 'All', deck = [], qi = 0, known = 0, total = 0, shown = false;
+  const filtered = () => cards.filter(c => (cat === 'All' || c[0] === cat) && (!$('star').checked || c[1]));
+  const shuffle = a => a.slice().sort(() => Math.random() - 0.5);
+  const badge = c => (c[0] === priority ? `<span class="star">⚠ ${priorityLabel}</span> · ` : '') + (c[1] ? '<span class="star">★ most asked</span> · ' : '');
+  function draw() {
+    $('filters').innerHTML = cats.map(c => `<button class="btn${c === cat ? ' on' : ''}" data-c="${c}">${c}</button>`).join('');
+    const list = filtered();
+    $('count').textContent = `${list.length} cards`;
+    $('grid').innerHTML = list.map(c => `<div class="card flash"><div class="q">${c[2]}</div><div class="hint">${badge(c)}click to reveal</div><div class="a">${c[3]}</div></div>`).join('');
+    $('grid').querySelectorAll('.flash').forEach(el => el.addEventListener('click', () => el.classList.toggle('open')));
+  }
+  function drawQuiz() {
+    const box = $('quiz');
+    if (qi >= deck.length) {
+      box.innerHTML = `<h3>Round complete</h3><p>You knew ${known} of ${total} cards.</p><div class="row"><button class="btn" data-q="again">New round</button><button class="btn" data-q="close">Close</button></div>`;
+      return;
+    }
+    const c = deck[qi];
+    box.innerHTML = `<span class="tag">${c[0]}${c[1] ? ' · most asked' : ''}</span><span class="mini" style="float:right">Card ${qi + 1} of ${deck.length} · known ${known}</span>` +
+      `<div class="q">${c[2]}</div>${shown ? `<div class="ans">${c[3]}</div>` : ''}<div class="row" style="margin-top:0">` +
+      (shown ? `<button class="btn" data-q="knew">I knew it</button><button class="btn" data-q="review">Review again later</button>` : `<button class="btn" data-q="reveal">Reveal answer</button>`) +
+      `<button class="btn" data-q="close">Close</button></div>`;
+  }
+  function start() {
+    const list = filtered();
+    deck = [...shuffle(list.filter(c => c[0] === priority)), ...shuffle(list.filter(c => c[0] !== priority))];
+    qi = 0; known = 0; total = deck.length; shown = false;
+    $('quiz').style.display = deck.length ? '' : 'none';
+    drawQuiz();
+  }
+  $('filters').addEventListener('click', e => { const b = e.target.closest('[data-c]'); if (b) { cat = b.dataset.c; draw(); } });
+  $('star').addEventListener('change', draw);
+  $('start').addEventListener('click', start);
+  $('quiz').addEventListener('click', e => {
+    const b = e.target.closest('[data-q]'); if (!b) return;
+    const a = b.dataset.q;
+    if (a === 'reveal') shown = true;
+    if (a === 'knew') { known++; qi++; shown = false; }
+    if (a === 'review') { deck.push(deck[qi]); qi++; shown = false; }
+    if (a === 'again') return start();
+    if (a === 'close') { $('quiz').style.display = 'none'; return; }
+    drawQuiz();
+  });
+  draw();
+}
+setupDeck(CARDS, { filters: 'flashFilters', star: 'starOnly', count: 'flashCount', start: 'quizStart', quiz: 'quiz', grid: 'flash' }, 'Article traps', 'article trap');
+
+/* ---------- SQL tab ---------- */
+const MIST = [
+  ['Q1', 'select salary dense_rank() over(...)', 'SELECT salary, DENSE_RANK() OVER (...)', 'Separate every SELECT column with a comma.'],
+  ['Q1', 'CTE and column both named rank', 'WITH ranked AS (... AS rnk)', 'Don\'t use function names or reserved words as names.'],
+  ['Q1 follow-up', 'returned zero rows when there is no 2nd salary', 'SELECT MAX(salary) ... WHERE rnk = 2', 'An aggregate over zero rows still returns one row: NULL.'],
+  ['Q2', 'dense_rank(partition by department ...)', 'DENSE_RANK() OVER (PARTITION BY department ...)', 'Every window function needs () and OVER.'],
+  ['Q2', 'selected only name', 'SELECT name, department, salary', 'Output columns must match what the question asks for.'],
+  ['Q3', 'ON c.customer_id = o.order_id', 'ON c.customer_id = o.customer_id', 'Join on columns that mean the same thing.'],
+  ['Q3', 'WHERE customer_is IS NULL', 'WHERE o.customer_id IS NULL', 'In an anti-join, test a column from the right-hand table, with its alias.'],
+  ['Q3 follow-up', 'NOT IN (SELECT customer_id FROM orders)', 'NOT EXISTS (SELECT 1 FROM orders o WHERE o.customer_id = c.customer_id)', 'One NULL in a NOT IN list makes it return no rows.'],
+  ['Q4', 'over(order by amount)', 'OVER (ORDER BY sale_date)', 'The ORDER BY inside OVER decides what "so far" means.'],
+  ['Q4', 'as running total', 'AS running_total', 'No spaces in names, or put them in double quotes.'],
+  ['Q4B', 'frame written after OVER(...), no ROWS BETWEEN', 'OVER (ORDER BY d, id ROWS BETWEEN UNBOUNDED PRECEDING AND CURRENT ROW)', 'The frame goes inside OVER, in the order P-O-R.'],
+  ['Q5', 'GROUP BY user_id', 'GROUP BY email', 'To find duplicate X, group by X.'],
+  ['Q5', 'HAVING with no GROUP BY, selecting user_id', 'SELECT email, COUNT(*) ... GROUP BY email HAVING COUNT(*) > 1', 'Every SELECT column must be grouped or aggregated.'],
+  ['Q6', 'ON e.emp_id = m.manager_id', 'ON e.manager_id = m.emp_id', 'Read it aloud: "the employee\'s manager_id is the manager\'s emp_id".'],
+  ['All', 'sales_Date, deposits id, customer_is', 'sale_date, deposit_id, customer_id', 'Check every name against the table before you submit.']
+];
+document.getElementById('sqlMistakes').innerHTML = `<table><tr><th>Where</th><th>You wrote</th><th>Correct</th><th>Rule</th></tr>${MIST.map(m =>
+  `<tr><td>${m[0]}</td><td><code>${esc(m[1])}</code></td><td><code>${esc(m[2])}</code></td><td>${m[3]}</td></tr>`).join('')}</table>`;
+
+(function execOrder() {
+  const S = [['FROM / JOIN', 'step 1', 'amber'], ['WHERE', 'step 2', 'amber'], ['GROUP BY', 'step 3', 'teal'], ['HAVING', 'step 4', 'teal'], ['Window fns', 'step 5', 'purple'],
+    ['QUALIFY', 'step 6', 'purple'], ['SELECT', 'step 7', 'coral'], ['DISTINCT', 'step 8', 'coral'], ['ORDER BY', 'step 9', 'gray'], ['LIMIT', 'step 10', 'gray']];
+  let g = '';
+  S.forEach((s, i) => { const r = Math.floor(i / 5), x = 20 + (i % 5) * 136, y = 20 + r * 100; g += B(x, y, 116, 56, s[2], s[0], s[1]); if (i % 5 < 4) g += A(x + 116, y + 28, x + 132, y + 28); });
+  g += `<path class="arr" d="M622 76 L622 98 L78 98 L78 116" marker-end="url(#arr2)"/>`;
+  document.getElementById('execOrder').innerHTML = SV(186, g) + ul([
+    `<b>WHERE can't use COUNT() or SUM()</b>: groups don't exist yet at step 2. Use <code>HAVING</code>.`,
+    `<b>WHERE can't use a window function</b>: windows are computed at step 5. Use <code>QUALIFY</code> (Snowflake) or a CTE.`,
+    `<b>ORDER BY can use SELECT aliases</b>, because it runs after SELECT. In standard SQL, WHERE can't. Snowflake is lenient and allows aliases in WHERE too, but don't rely on that in a general interview.`,
+    `Written order: <code>SELECT … FROM … WHERE … GROUP BY … HAVING … QUALIFY … ORDER BY … LIMIT</code>`]);
+})();
+
+(function joinDemo() {
+  const C = [[1, 'Ravi'], [2, 'Meena'], [3, 'John'], [4, 'Priya']];
+  const O = [[101, 1, 250], [102, 1, 100], [103, 3, 400], [104, null, 50], [105, 9, 75]];
+  const N = '<span class="mini">NULL</span>';
+  const SQL = {
+    inner: 'SELECT c.customer_id, c.name, o.order_id, o.amount\nFROM customers c\nJOIN orders o ON c.customer_id = o.customer_id;',
+    left: 'SELECT c.customer_id, c.name, o.order_id, o.amount\nFROM customers c\nLEFT JOIN orders o ON c.customer_id = o.customer_id;',
+    right: 'SELECT c.customer_id, c.name, o.order_id, o.amount\nFROM customers c\nRIGHT JOIN orders o ON c.customer_id = o.customer_id;',
+    full: 'SELECT c.customer_id, c.name, o.order_id, o.amount\nFROM customers c\nFULL OUTER JOIN orders o ON c.customer_id = o.customer_id;',
+    anti: 'SELECT c.customer_id, c.name\nFROM customers c\nWHERE NOT EXISTS (SELECT 1 FROM orders o WHERE o.customer_id = c.customer_id);',
+    semi: 'SELECT c.customer_id, c.name\nFROM customers c\nWHERE EXISTS (SELECT 1 FROM orders o WHERE o.customer_id = c.customer_id);'
+  };
+  const NOTE = {
+    inner: 'Only matching pairs. Ravi appears twice because he has two orders: joins multiply rows. Orders 104 and 105 have no matching customer, so they disappear.',
+    left: 'Every customer is kept. Meena and Priya have no orders, so their order columns are NULL.',
+    right: 'Every order is kept. Orders 104 (NULL customer) and 105 (customer 9 doesn\'t exist) get NULL customer columns.',
+    full: 'Everything from both sides: matches, customers with no orders, and orders with no customer.',
+    anti: 'Customers with no orders (Question 3). NOT EXISTS is safe even when orders.customer_id contains NULL.',
+    semi: 'Customers with at least one order. Each customer appears once, even Ravi with two orders, unlike an INNER JOIN.'
+  };
+  let k = 'inner';
+  function rows() {
+    const m = c => O.filter(o => o[1] === c[0]);
+    if (k === 'anti') return C.filter(c => !m(c).length).map(c => [c[0], c[1]]);
+    if (k === 'semi') return C.filter(c => m(c).length).map(c => [c[0], c[1]]);
+    const out = [];
+    if (k !== 'right') C.forEach(c => { const ms = m(c); if (ms.length) ms.forEach(o => out.push([c[0], c[1], o[0], o[2]])); else if (k !== 'inner') out.push([c[0], c[1], N, N]); });
+    if (k === 'right') O.forEach(o => { const c = C.find(c => c[0] === o[1]); out.push(c ? [c[0], c[1], o[0], o[2]] : [N, N, o[0], o[2]]); });
+    if (k === 'full') O.filter(o => !C.some(c => c[0] === o[1])).forEach(o => out.push([N, N, o[0], o[2]]));
+    return out;
+  }
+  function draw() {
+    const r = rows(), short = k === 'anti' || k === 'semi';
+    document.getElementById('joinDemo').innerHTML =
+      seg('j', k, [['inner', 'INNER'], ['left', 'LEFT'], ['right', 'RIGHT'], ['full', 'FULL OUTER'], ['anti', 'Anti (NOT EXISTS)'], ['semi', 'Semi (EXISTS)']]) +
+      `<div class="cols2"><div>${code(SQL[k])}<p class="mini">${NOTE[k]}</p></div><div><div class="mini">Result: ${r.length} rows</div>` +
+      tbl(short ? ['customer_id', 'name'] : ['customer_id', 'name', 'order_id', 'amount'], r) + `</div></div>`;
+    document.querySelectorAll('#joinDemo [data-act]').forEach(b => b.addEventListener('click', () => { k = b.dataset.act.split(':')[1]; draw(); }));
+  }
+  draw();
+})();
+
+(function rankDemo() {
+  const R = [['Carol', 120000, 1, 1, 1], ['Dave', 120000, 2, 1, 1], ['Alice', 90000, 3, 3, 2], ['Bob', 75000, 4, 4, 3], ['Eve', 65000, 5, 5, 4]];
+  const cell = (v, diff) => `<td${diff ? ' style="background:var(--amber-f);color:var(--amber-t1);font-weight:500"' : ''}>${v}</td>`;
+  document.getElementById('rankDemo').innerHTML = `<table><tr><th>name</th><th>salary</th><th>ROW_NUMBER()</th><th>RANK()</th><th>DENSE_RANK()</th></tr>${R.map(r =>
+    `<tr><td>${r[0]}</td><td>${r[1]}</td>${cell(r[2], r[2] !== r[4])}${cell(r[3], r[3] !== r[4])}${cell(r[4], r[2] !== r[4])}</tr>`).join('')}</table>` +
+    code('SELECT name, salary,\n       ROW_NUMBER() OVER (ORDER BY salary DESC) AS row_num,\n       RANK()       OVER (ORDER BY salary DESC) AS rnk,\n       DENSE_RANK() OVER (ORDER BY salary DESC) AS dense_rnk\nFROM employees;') +
+    tbl(['Function', 'On ties', 'Use it for'], [
+      ['ROW_NUMBER()', 'different numbers (1, 2), order between ties is arbitrary', 'dedupe, "exactly one row per group"'],
+      ['RANK()', 'same number, then skips (1, 1, 3)', 'competition ranking'],
+      ['DENSE_RANK()', 'same number, no gaps (1, 1, 2)', 'Nth highest distinct value']]);
+})();
+
+(function patDemo() {
+  const P = [
+    ['Nth highest salary', 'SELECT MAX(salary) AS nth_salary\nFROM (\n    SELECT salary, DENSE_RANK() OVER (ORDER BY salary DESC) AS rnk\n    FROM employees\n) t\nWHERE rnk = 2;          -- change 2 to N', 'MAX() makes it return NULL when there is no Nth value.'],
+    ['Top N per group', '-- Snowflake\nSELECT name, department, salary\nFROM employees\nQUALIFY DENSE_RANK() OVER (PARTITION BY department ORDER BY salary DESC) <= 3;\n\n-- Any database\nWITH r AS (\n    SELECT name, department, salary,\n           DENSE_RANK() OVER (PARTITION BY department ORDER BY salary DESC) AS rnk\n    FROM employees\n)\nSELECT name, department, salary FROM r WHERE rnk <= 3;', 'Use ROW_NUMBER() instead if exactly N rows per group are required.'],
+    ['Find duplicates', 'SELECT email, COUNT(*) AS cnt\nFROM users\nGROUP BY email\nHAVING COUNT(*) > 1;', 'Group by the column you are checking for duplicates.'],
+    ['Delete duplicates, keep one', '-- Snowflake: rebuild without duplicates\nCREATE OR REPLACE TABLE users AS\nSELECT * FROM users\nQUALIFY ROW_NUMBER() OVER (PARTITION BY email ORDER BY user_id) = 1;\n\n-- Other databases (e.g. PostgreSQL)\nDELETE FROM users u\nUSING users k\nWHERE u.email = k.email AND u.user_id > k.user_id;', 'ROW_NUMBER, not RANK: exactly one survivor per email.'],
+    ['Customers with no orders', 'SELECT c.name\nFROM customers c\nWHERE NOT EXISTS (\n    SELECT 1 FROM orders o WHERE o.customer_id = c.customer_id\n);\n\n-- or\nSELECT c.name\nFROM customers c\nLEFT JOIN orders o ON c.customer_id = o.customer_id\nWHERE o.customer_id IS NULL;', 'Avoid NOT IN when the subquery can return NULL.'],
+    ['Employee earns more than manager', 'SELECT e.name AS employee, e.salary, m.name AS manager, m.salary AS mgr_salary\nFROM staff e\nJOIN staff m ON e.manager_id = m.emp_id\nWHERE e.salary > m.salary;', 'Self-join: the employee\'s manager_id = the manager\'s emp_id.'],
+    ['Running total', 'SELECT sale_date, amount,\n       SUM(amount) OVER (\n           ORDER BY sale_date, sale_id\n           ROWS BETWEEN UNBOUNDED PRECEDING AND CURRENT ROW\n       ) AS running_total\nFROM sales\nORDER BY sale_date, sale_id;', 'Add PARTITION BY to restart the total per customer, month, etc.'],
+    ['Moving 3-day average', 'SELECT rev_date, revenue,\n       AVG(revenue) OVER (\n           ORDER BY rev_date\n           ROWS BETWEEN 2 PRECEDING AND CURRENT ROW\n       ) AS avg_3d\nFROM daily_revenue;', 'The window slides: always the current row plus the two before it.'],
+    ['Day-over-day change (LAG)', 'SELECT rev_date, revenue,\n       LAG(revenue) OVER (ORDER BY rev_date) AS prev_revenue,\n       revenue - LAG(revenue) OVER (ORDER BY rev_date) AS change,\n       ROUND(100.0 * (revenue - LAG(revenue) OVER (ORDER BY rev_date))\n             / NULLIF(LAG(revenue) OVER (ORDER BY rev_date), 0), 1) AS pct_change\nFROM daily_revenue;', 'NULLIF avoids division by zero. LEAD looks at the next row instead.'],
+    ['Only days where revenue went up', 'SELECT rev_date, revenue\nFROM daily_revenue\nQUALIFY revenue > LAG(revenue) OVER (ORDER BY rev_date);', 'This is Question 7 Part B: window results are filtered with QUALIFY or a CTE, not WHERE.'],
+    ['Consecutive days (gaps and islands)', 'WITH d AS (\n    SELECT user_id, login_date,\n           DATEADD(day, -ROW_NUMBER() OVER (PARTITION BY user_id ORDER BY login_date), login_date) AS grp\n    FROM (SELECT DISTINCT user_id, login_date FROM logins) x\n)\nSELECT user_id, MIN(login_date) AS start_date, MAX(login_date) AS end_date, COUNT(*) AS days\nFROM d\nGROUP BY user_id, grp\nHAVING COUNT(*) >= 3;', 'Date minus row number stays constant across a run of consecutive dates.'],
+    ['Pivot rows to columns', 'SELECT department,\n       SUM(CASE WHEN EXTRACT(year FROM sale_date) = 2025 THEN amount ELSE 0 END) AS sales_2025,\n       SUM(CASE WHEN EXTRACT(year FROM sale_date) = 2026 THEN amount ELSE 0 END) AS sales_2026\nFROM sales\nGROUP BY department;', 'Conditional aggregation works everywhere. Snowflake also has PIVOT.'],
+    ['Percent of total', 'SELECT department, amount,\n       ROUND(100.0 * amount / SUM(amount) OVER (), 1) AS pct_of_total\nFROM dept_sales;', 'An empty OVER () means the window is all rows.'],
+    ['Above department average', 'SELECT name, department, salary\nFROM employees\nQUALIFY salary > AVG(salary) OVER (PARTITION BY department);', 'Without QUALIFY: compute the average in a CTE, then filter.'],
+    ['Org chart (recursive CTE)', 'WITH RECURSIVE chain AS (\n    SELECT emp_id, name, manager_id, 1 AS lvl\n    FROM staff WHERE manager_id IS NULL\n    UNION ALL\n    SELECT s.emp_id, s.name, s.manager_id, c.lvl + 1\n    FROM staff s\n    JOIN chain c ON s.manager_id = c.emp_id\n)\nSELECT * FROM chain ORDER BY lvl;', 'Anchor query + recursive part joined with UNION ALL.']
+  ];
+  let i = 0;
+  function draw() {
+    document.getElementById('patDemo').innerHTML = `<div class="filters">${P.map((p, j) => `<button class="btn${j === i ? ' on' : ''}" data-p="${j}">${p[0]}</button>`).join('')}</div>` +
+      `<div class="panel"><h3>${P[i][0]}</h3>${code(P[i][1])}<p class="mini">${P[i][2]}</p></div>`;
+    document.querySelectorAll('#patDemo [data-p]').forEach(b => b.addEventListener('click', () => { i = +b.dataset.p; draw(); }));
+  }
+  draw();
+})();
+
+document.getElementById('nullTraps').innerHTML = tbl(['Expression', 'Result', 'Do this instead'], [
+  ['<code>NULL = NULL</code>', 'NULL (unknown), so the row is filtered out', '<code>IS NULL</code>, or <code>EQUAL_NULL(a, b)</code> / <code>IS NOT DISTINCT FROM</code>'],
+  ['<code>x NOT IN (1, NULL)</code>', 'never true, so no rows', '<code>NOT EXISTS</code>, or filter NULLs out of the subquery'],
+  ['<code>WHERE status &lt;&gt; \'A\'</code>', 'also drops rows where status is NULL', 'add <code>OR status IS NULL</code>'],
+  ['<code>COUNT(col)</code>', 'skips NULLs', '<code>COUNT(*)</code> counts rows'],
+  ['<code>AVG(col)</code>', 'ignores NULLs (doesn\'t treat them as 0)', '<code>AVG(COALESCE(col, 0))</code> if NULL should mean 0'],
+  ['<code>5 + NULL</code>, <code>\'a\' || NULL</code>', 'NULL', '<code>COALESCE(col, 0)</code> or <code>COALESCE(col, \'\')</code>'],
+  ['<code>x / 0</code>', 'error', '<code>x / NULLIF(y, 0)</code> (Snowflake also has <code>DIV0</code>)'],
+  ['LEFT JOIN, then <code>WHERE right.col = ...</code>', 'turns into an INNER JOIN', 'put the condition in the <code>ON</code> clause'],
+  ['<code>ORDER BY col</code>', 'Snowflake: NULLs last when ascending, first when descending', '<code>NULLS FIRST</code> / <code>NULLS LAST</code>']]);
+
+const SQLCARDS = [
+  ['Your mistakes', 1, 'Spot the bug: select salary dense_rank() over (order by salary desc)', 'Missing comma between columns: SELECT salary, DENSE_RANK() OVER (...)'],
+  ['Your mistakes', 1, 'Spot the bug: dense_rank(partition by department order by salary desc)', 'Missing () and OVER: DENSE_RANK() OVER (PARTITION BY department ORDER BY salary DESC)'],
+  ['Your mistakes', 1, 'Spot the bug: LEFT JOIN orders o ON c.customer_id = o.order_id', 'Wrong join key. Customer IDs never equal order IDs. Use o.customer_id.'],
+  ['Your mistakes', 1, 'In a LEFT JOIN anti-join, which column do you test for NULL?', 'A column from the RIGHT table, with its alias: WHERE o.customer_id IS NULL. The left table\'s key is never NULL.'],
+  ['Your mistakes', 1, 'Why can NOT IN (SELECT customer_id FROM orders) return no rows?', 'If the subquery returns a NULL, x NOT IN (..., NULL) is never true. Use NOT EXISTS.'],
+  ['Your mistakes', 1, 'Spot the bug: SUM(amount) OVER (ORDER BY amount) AS running total', 'Two bugs: order by the date, not amount, and no spaces in an alias: running_total.'],
+  ['Your mistakes', 1, 'Where does ROWS BETWEEN ... go?', 'Inside OVER(), after ORDER BY: OVER (PARTITION BY ... ORDER BY ... ROWS BETWEEN ...). Remember P-O-R.'],
+  ['Your mistakes', 1, 'To find duplicate emails, what do you GROUP BY?', 'email. To find duplicate X, group by X. Grouping by the unique user_id makes every count 1.'],
+  ['Your mistakes', 1, 'Why does SELECT user_id ... HAVING COUNT(*) > 1 (no GROUP BY) fail?', 'Without GROUP BY the whole table is one group, and user_id isn\'t grouped or aggregated.'],
+  ['Your mistakes', 1, 'Self-join employees to managers: which ON clause?', 'e.manager_id = m.emp_id ("the employee\'s manager_id is the manager\'s emp_id"). The reverse swaps the roles.'],
+  ['Your mistakes', 0, 'How do you make "second highest salary" return NULL when it doesn\'t exist?', 'Wrap it in an aggregate: SELECT MAX(salary) ... WHERE rnk = 2. An aggregate over zero rows returns one NULL row.'],
+  ['Your mistakes', 0, 'Does ORDER BY inside OVER() sort the final output?', 'No. It only controls the calculation. Add an ORDER BY at the end of the query.'],
+  ['Basics', 1, 'What is the logical order of execution?', 'FROM/JOIN → WHERE → GROUP BY → HAVING → window functions → QUALIFY → SELECT → DISTINCT → ORDER BY → LIMIT.'],
+  ['Basics', 1, 'WHERE vs HAVING?', 'WHERE filters rows before grouping. HAVING filters groups after aggregation, so it can use COUNT, SUM and so on.'],
+  ['Basics', 1, 'DELETE vs TRUNCATE vs DROP?', 'DELETE removes chosen rows (with WHERE). TRUNCATE removes all rows, keeps the table. DROP removes the table itself.'],
+  ['Basics', 1, 'UNION vs UNION ALL?', 'UNION removes duplicate rows (slower). UNION ALL keeps everything (faster).'],
+  ['Basics', 0, 'COUNT(*) vs COUNT(col) vs COUNT(DISTINCT col)?', 'All rows; non-NULL values of col; distinct non-NULL values of col.'],
+  ['Basics', 0, 'Primary key vs unique key?', 'PK: unique and NOT NULL, one per table. Unique: no duplicates but can allow NULLs, several per table.'],
+  ['Basics', 0, 'DDL, DML, DCL, TCL?', 'DDL: CREATE/ALTER/DROP. DML: SELECT/INSERT/UPDATE/DELETE/MERGE. DCL: GRANT/REVOKE. TCL: COMMIT/ROLLBACK.'],
+  ['Basics', 0, 'What is normalisation (1NF, 2NF, 3NF)?', '1NF: atomic values. 2NF: no partial dependency on part of a key. 3NF: no column depends on another non-key column.'],
+  ['Joins', 1, 'INNER vs LEFT vs RIGHT vs FULL OUTER JOIN?', 'INNER: matches only. LEFT: all left rows + matches. RIGHT: all right rows + matches. FULL: everything from both sides.'],
+  ['Joins', 1, 'Why can a join return more rows than either table?', 'Duplicate keys multiply: 2 matching rows × 3 matching rows = 6 rows.'],
+  ['Joins', 1, 'What is a self-join?', 'Joining a table to itself with two aliases, e.g. employees to their managers.'],
+  ['Joins', 0, 'What does a CROSS JOIN produce?', 'Every combination: rows(A) × rows(B). No join condition.'],
+  ['Joins', 1, 'Filter in ON vs WHERE for a LEFT JOIN?', 'In ON: unmatched left rows are kept. In WHERE on the right table: they are removed, so it behaves like INNER.'],
+  ['Joins', 0, 'EXISTS vs IN?', 'EXISTS stops at the first match and is NULL-safe. IN compares against a list; NOT IN breaks if the list contains NULL.'],
+  ['Window functions', 1, 'ROW_NUMBER vs RANK vs DENSE_RANK for 100, 100, 90?', 'ROW_NUMBER: 1, 2, 3. RANK: 1, 1, 3. DENSE_RANK: 1, 1, 2.'],
+  ['Window functions', 1, 'GROUP BY vs PARTITION BY?', 'GROUP BY collapses rows into one per group. PARTITION BY keeps every row and computes per group.'],
+  ['Window functions', 1, 'What do LAG and LEAD do?', 'Read a value from the previous (LAG) or next (LEAD) row in the window order.'],
+  ['Window functions', 1, 'ROWS vs RANGE in a frame?', 'ROWS counts physical rows. RANGE includes all ties (peers) of the current ORDER BY value. The default with ORDER BY is RANGE.'],
+  ['Window functions', 0, 'Why does LAST_VALUE() often return the current row?', 'The default frame ends at the current row. Use ROWS BETWEEN UNBOUNDED PRECEDING AND UNBOUNDED FOLLOWING.'],
+  ['Window functions', 1, 'Can you use a window function in WHERE?', 'No, windows are computed after WHERE. Use a CTE or subquery, or QUALIFY in Snowflake.'],
+  ['Window functions', 0, 'What does NTILE(4) do?', 'Splits ordered rows into 4 roughly equal buckets (quartiles).'],
+  ['Window functions', 0, 'How do you compute percent of total?', '100.0 * amount / SUM(amount) OVER (). An empty OVER () means all rows.'],
+  ['Subqueries & CTEs', 1, 'Correlated vs non-correlated subquery?', 'Correlated refers to the outer row and runs logically per row. Non-correlated runs once on its own.'],
+  ['Subqueries & CTEs', 1, 'CTE vs subquery vs temp table?', 'CTE: named, readable, lasts for one statement. Subquery: inline. Temp table: stored for the session, reusable.'],
+  ['Subqueries & CTEs', 0, 'What is a recursive CTE used for?', 'Hierarchies and sequences: an anchor query UNION ALL a part that joins back to the CTE.'],
+  ['NULLs', 1, 'What is NULL = NULL?', 'NULL (unknown), not TRUE. Use IS NULL, or EQUAL_NULL / IS NOT DISTINCT FROM.'],
+  ['NULLs', 1, 'COALESCE vs NULLIF?', 'COALESCE returns the first non-NULL value. NULLIF(a, b) returns NULL when a = b, e.g. x / NULLIF(y, 0).'],
+  ['NULLs', 0, 'Do aggregates count NULLs?', 'No. SUM, AVG, MIN, MAX and COUNT(col) ignore NULLs. COUNT(*) counts every row.'],
+  ['Patterns', 1, 'How do you find the Nth highest salary?', 'DENSE_RANK() OVER (ORDER BY salary DESC), keep rnk = N, wrap the result in MAX().'],
+  ['Patterns', 1, 'How do you get the top 3 per department?', 'DENSE_RANK() OVER (PARTITION BY department ORDER BY salary DESC) <= 3, using a CTE or QUALIFY.'],
+  ['Patterns', 1, 'How do you delete duplicates but keep one row?', 'ROW_NUMBER() OVER (PARTITION BY key ORDER BY id), then keep rn = 1 (or delete rn > 1).'],
+  ['Patterns', 1, 'How do you write a running total?', 'SUM(x) OVER (ORDER BY date, id ROWS BETWEEN UNBOUNDED PRECEDING AND CURRENT ROW).'],
+  ['Patterns', 0, 'How do you find consecutive login days?', 'Gaps and islands: date minus ROW_NUMBER() is constant within a run. GROUP BY that value.'],
+  ['Patterns', 0, 'How do you pivot rows into columns?', 'Conditional aggregation: SUM(CASE WHEN year = 2026 THEN amount END), or PIVOT.'],
+  ['Patterns', 0, 'How do you calculate month-over-month growth?', '(this - LAG(this)) / NULLIF(LAG(this), 0) * 100, ordered by month.'],
+  ['Performance', 1, 'How would you speed up a slow query?', 'Read the plan, filter early, select only needed columns, avoid row explosions, add indexes or clustering, avoid functions on filter columns.'],
+  ['Performance', 0, 'Clustered vs non-clustered index (other databases)?', 'Clustered: the table\'s physical order, one per table. Non-clustered: a separate structure pointing to rows, many per table.'],
+  ['Performance', 0, 'Why avoid SELECT *?', 'It reads unnecessary columns, which is costly in columnar stores, and it breaks when columns change.'],
+  ['Performance', 0, 'View vs materialized view?', 'A view reruns its query each time. A materialized view stores the result and refreshes it.'],
+  ['Performance', 0, 'What does ACID mean?', 'Atomicity, Consistency, Isolation, Durability: a transaction is all-or-nothing, valid, isolated and permanent.']
+];
+setupDeck(SQLCARDS, { filters: 'sqlFilters', star: 'sqlStar', count: 'sqlCount', start: 'sqlQuizStart', quiz: 'sqlQuiz', grid: 'sqlFlash' }, 'Your mistakes', 'your mistake');
+</script>
+</body>
+</html>
