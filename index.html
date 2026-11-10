@@ -111,6 +111,54 @@
     .view.on { animation: fade .3s ease; }
     @keyframes fade { from { opacity: 0; transform: translateY(4px); } to { opacity: 1; transform: none; } }
   }
+
+  /* Modal styling */
+  .modal-overlay {
+    position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+    background: rgba(0, 0, 0, 0.55); backdrop-filter: blur(3px);
+    display: none; align-items: center; justify-content: center;
+    z-index: 9999; padding: 1rem;
+  }
+  .modal-overlay.open { display: flex; }
+  .modal-card {
+    background: var(--bg-primary); color: var(--text-primary);
+    border: 1px solid var(--border-secondary); border-radius: var(--radius-lg);
+    width: 100%; max-width: 620px; max-height: 90vh;
+    display: flex; flex-direction: column; box-shadow: 0 12px 36px rgba(0,0,0,0.25);
+    overflow: hidden;
+  }
+  .modal-head {
+    padding: 14px 18px; border-bottom: 0.5px solid var(--border-tertiary);
+    display: flex; align-items: center; justify-content: space-between;
+    background: var(--bg-secondary);
+  }
+  .modal-head h3 { font-size: 16px; margin: 0; }
+  .modal-body {
+    padding: 16px 18px; overflow-y: auto; flex: 1; display: flex; flex-direction: column; gap: 12px;
+  }
+  .modal-foot {
+    padding: 12px 18px; border-top: 0.5px solid var(--border-tertiary);
+    background: var(--bg-secondary); display: flex; gap: 10px; justify-content: flex-end;
+  }
+  .form-group { display: flex; flex-direction: column; gap: 4px; }
+  .form-group label { font-size: 12px; font-weight: 500; color: var(--text-secondary); }
+  .form-control {
+    font: inherit; font-size: 13px; padding: 7px 10px; border-radius: var(--radius-md);
+    border: 0.5px solid var(--border-secondary); background: var(--bg-primary);
+    color: var(--text-primary); width: 100%; box-sizing: border-box;
+  }
+  .form-control:focus { outline: none; border-color: var(--teal-s); }
+  textarea.form-control { min-height: 75px; resize: vertical; line-height: 1.5; }
+  .btn-primary { background: var(--teal-s); color: #ffffff; border: none; font-weight: 500; }
+  .btn-primary:hover { opacity: 0.92; background: var(--teal-s); }
+  .btn-outline { background: transparent; border: 0.5px solid var(--border-secondary); }
+  .toast {
+    position: fixed; bottom: 24px; right: 24px; background: var(--green-f); color: var(--green-t);
+    border: 1px solid var(--green-t); padding: 10px 16px; border-radius: var(--radius-md);
+    font-size: 13px; font-weight: 500; display: none; z-index: 10000; box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+  }
+  .toast.show { display: block; animation: fadein 0.3s; }
+  @keyframes fadein { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
 </style>
 </head>
 <body>
@@ -133,6 +181,8 @@
   <button data-v="v7">6 · Interview topics</button>
   <button data-v="v6">7 · Cheat sheet + flashcards</button>
   <button data-v="v8">8 · SQL cheat sheet</button>
+  <button data-v="v9">9 · Pipeline flow &amp; interview Q&amp;A</button>
+  <button data-v="v10">10 · Profile &amp; elevator pitch</button>
 </div>
 
 <section class="view on" id="v1">
@@ -322,6 +372,350 @@
   <div class="grid" id="sqlFlash"></div>
 </section>
 
+
+
+<section class="view" id="v9">
+  <h2>Python-Based Data Processing into Snowflake (DAGKit Orchestration)</h2>
+  <p class="sub">Production technical depth, code implementation patterns, state management, runtime branching, idempotent loading, observability, and interview defense.</p>
+
+  <!-- Section 1: Executive Summary Table & Architecture Diagram -->
+  <h3>1 · Technical flow summary (One-liner for interviews)</h3>
+  <p class="sub">How every architectural layer connects &mdash; from Python orchestration to Snowflake and downstream SingleStore.</p>
+  <div id="pipelineTable"></div>
+
+  <div class="vis" style="margin-top:14px">
+    <svg viewBox="0 0 680 190" xmlns="http://www.w3.org/2000/svg">
+      <!-- DAGKit Job -->
+      <g class="c-purple">
+        <rect class="box" x="15" y="24" width="125" height="66" rx="8"/>
+        <text class="th" x="77" y="46" text-anchor="middle" dominant-baseline="central">DAGKit SDK</text>
+        <text class="ts" x="77" y="66" text-anchor="middle" dominant-baseline="central">Job &amp; @job.node</text>
+      </g>
+      <line class="arr" x1="140" y1="57" x2="164" y2="57" marker-end="url(#arr2)"/>
+
+      <!-- Set Variables / Dynamic Branching -->
+      <g class="c-gray">
+        <rect class="box" x="168" y="24" width="140" height="66" rx="8"/>
+        <text class="th" x="238" y="46" text-anchor="middle" dominant-baseline="central">Set_Variables</text>
+        <text class="ts" x="238" y="66" text-anchor="middle" dominant-baseline="central">Dynamic Branching</text>
+      </g>
+      <line class="arr" x1="308" y1="57" x2="332" y2="57" marker-end="url(#arr2)"/>
+
+      <!-- Snowflake DML -->
+      <g class="c-teal">
+        <rect class="box" x="336" y="16" width="168" height="82" rx="8"/>
+        <text class="th" x="420" y="38" text-anchor="middle" dominant-baseline="central">Snowflake DML</text>
+        <text class="ts" x="420" y="56" text-anchor="middle" dominant-baseline="central">DELETE partition</text>
+        <text class="ts" x="420" y="74" text-anchor="middle" dominant-baseline="central">&rarr; INSERT &rarr; COMMIT</text>
+      </g>
+      <line class="arr" x1="504" y1="57" x2="528" y2="57" marker-end="url(#arr2)"/>
+
+      <!-- Downstream Export -->
+      <g class="c-coral">
+        <rect class="box" x="532" y="16" width="134" height="82" rx="8"/>
+        <text class="th" x="599" y="38" text-anchor="middle" dominant-baseline="central">Downstream</text>
+        <text class="ts" x="599" y="56" text-anchor="middle" dominant-baseline="central">EXP &rarr; AWS S3</text>
+        <text class="ts" x="599" y="74" text-anchor="middle" dominant-baseline="central">LDR &rarr; SingleStore</text>
+      </g>
+
+      <!-- Observability Banner -->
+      <g class="c-amber">
+        <rect class="inner" x="168" y="118" width="498" height="52" rx="8"/>
+        <text class="th" x="417" y="136" text-anchor="middle" dominant-baseline="central">End-to-End Observability &amp; Audit Trail</text>
+        <text class="ts" x="417" y="154" text-anchor="middle" dominant-baseline="central">Session ID &bull; cursor.rowcount after every DML &bull; Snowflake Query ID from INFORMATION_SCHEMA</text>
+      </g>
+    </svg>
+  </div>
+
+  <!-- Section 2: Deep Dive Implementation Details & Code Blocks -->
+  <h3 style="margin-top:24px">2 · Production code implementation patterns</h3>
+  <p class="sub">How code is structured across jobs, connections, dynamic state, branching, DML, and auditing.</p>
+
+  <div class="grid" style="grid-template-columns: 1fr; gap: 14px; margin-top: 10px;">
+    <!-- Core Framework -->
+    <div class="card">
+      <div class="tag" style="background:var(--purple-f);color:var(--purple-t1);font-weight:500">A &bull; Core Framework &amp; Job Definition</div>
+      <h3 style="margin: 6px 0 4px; font-size: 14.5px;">Custom Orchestration with DAGKit</h3>
+      <p style="margin-bottom:8px">Each pipeline is instantiated as a <code>Job</code> object. Individual processing steps are decorated Python functions called nodes. The framework automatically manages connection pooling, variable passing, and contextual dependencies.</p>
+      <pre class="code"># How you define a job and a node
+job = Job("SF_RTL_FR_RECAP_SEM_PVT")
+
+@job.node("Set_Variables", "execute")
+def f(job_context: JobContext, node_context: NodeContext, exec_context: ExecutionContext):
+    # Framework injects JobContext, NodeContext, and ExecutionContext automatically
+    ...</pre>
+      <div class="say" style="margin-top:8px">
+        <b>Say this in the interview:</b> &ldquo;We use a custom Python-based orchestration framework called DAGKit. Each pipeline is defined as a Job object, and individual processing steps are decorated Python functions called nodes. The framework manages connections, variable passing between nodes, and execution context &mdash; so each node function receives a JobContext, NodeContext, and ExecutionContext as arguments.&rdquo;
+      </div>
+    </div>
+
+    <!-- SQL Execution -->
+    <div class="card">
+      <div class="tag" style="background:var(--teal-f);color:var(--teal-t1);font-weight:500">B &bull; Managed Connection &amp; SQL Execution</div>
+      <h3 style="margin: 6px 0 4px; font-size: 14.5px;">Executing SQL Against Snowflake</h3>
+      <p style="margin-bottom:8px">Nodes obtain a cursor from the framework's managed connection. Queries are parameterized and compiled using <code>exec_context.query_builder.prepare()</code>, preventing injection and handling variable interpolation automatically.</p>
+      <pre class="code">cursor = exec_context.connection.cursor()
+
+query = exec_context.query_builder.prepare("""
+    SELECT COALESCE(MAX(AS_OF_RPTG_DT), CURRENT_DATE)
+    FROM GBI_RETAIL_SEMANTIC_DB.RETAIL.RTL_STR_WKLY_METRIC_AGG_RECAP_PVT;
+""")
+cursor.execute(query)
+rows = cursor.fetchone()</pre>
+      <div class="say" style="margin-top:8px">
+        <b>Say this in the interview:</b> &ldquo;Within each node, we get a cursor from the execution context's managed connection, prepare the query through a query builder &mdash; which handles variable interpolation &mdash; and then execute it. We don't manage raw connections ourselves; the framework handles pooling and lifecycle.&rdquo;
+      </div>
+    </div>
+
+    <!-- State & Dynamic Variable Passing -->
+    <div class="card">
+      <div class="tag" style="background:var(--purple-f);color:var(--purple-t1);font-weight:500">C &bull; State Passing &amp; Dynamic Variables</div>
+      <h3 style="margin: 6px 0 4px; font-size: 14.5px;">Dynamic Variable Setting &amp; State Passing</h3>
+      <p style="margin-bottom:8px">The pipeline is parameterized at runtime rather than relying on hardcoded configuration. The initial <code>Set_Variables</code> node queries metadata tables to dynamically determine current reporting periods.</p>
+      <pre class="code"># Setting state in Set_Variables node
+exec_context.variable.set("curr_performance_year", str(rows[0]))
+exec_context.variable.set("curr_run_ind", "Y")
+
+# Reading downstream via ${variable} interpolation in SQL
+query = exec_context.query_builder.prepare("""
+    WHERE as_of_rptg_dt = TO_DATE('${curr_date}', 'YYYY-MM-DD')
+""")</pre>
+      <div class="say" style="margin-top:8px">
+        <b>Say this in the interview:</b> &ldquo;One of the key patterns is dynamic variable setting. The first node &mdash; Set_Variables &mdash; queries fiscal calendar metadata and sets runtime variables like current performance year, quarter start/end dates, and run indicators. Downstream nodes read those variables via exec_context.variable.get() or SQL interpolation. This parameterizes the entire pipeline dynamically at runtime.&rdquo;
+      </div>
+    </div>
+
+    <!-- Branching Logic -->
+    <div class="card">
+      <div class="tag" style="background:var(--coral-f);color:var(--coral-t1);font-weight:500">D &bull; Runtime DAG Branching</div>
+      <h3 style="margin: 6px 0 4px; font-size: 14.5px;">Dynamic DAG Execution Control</h3>
+      <p style="margin-bottom:8px">Rather than a static DAG where all nodes run unconditionally, the return value of a node is a list of node names to activate next. If there is no work to do, it gracefully routes to a no-op <code>Dummy_Node</code>.</p>
+      <pre class="code"># Return value determines which downstream nodes are activated
+if curr_run_ind == 'Y' and (buff_run_ind == 'Y' or snap_run_ind == 'Y'):
+    return ["curr_qtr_node", "buffer_and_completed_qtr_node"]
+elif curr_run_ind == 'Y':
+    return ["curr_qtr_node"]
+elif buff_run_ind == 'Y' or snap_run_ind == 'Y':
+    return ["buffer_and_completed_qtr_node"]
+else:
+    return ["Dummy_Node"]  # Graceful exit if no data to process</pre>
+      <div class="say" style="margin-top:8px">
+        <b>Say this in the interview:</b> &ldquo;The Set_Variables node controls which downstream nodes actually execute. Based on the run indicators it sets, the function returns a list of node names to activate. So the DAG is not statically wired &mdash; it branches at runtime depending on the data state. The Dummy_Node acts as a graceful no-op exit when there's nothing to process.&rdquo;
+      </div>
+    </div>
+
+    <!-- Idempotent DML Loading -->
+    <div class="card">
+      <div class="tag" style="background:var(--teal-f);color:var(--teal-t1);font-weight:500">E &bull; Idempotent Loading Pattern</div>
+      <h3 style="margin: 6px 0 4px; font-size: 14.5px;">DELETE + INSERT Atomic Transactions</h3>
+      <p style="margin-bottom:8px">Ensures exact-once idempotency across retries. The target partition is selectively cleared, refreshed data is inserted, and transactions are committed explicitly.</p>
+      <pre class="code"># Step 1: Clear the target partition
+query = exec_context.query_builder.prepare("""
+    DELETE FROM GBI_RETAIL_SEMANTIC_DB.RETAIL_APP.RTL_STR_METRIC_RATING_CURR_QTR_PVT
+    WHERE performance_year = '${curr_performance_year}' 
+      AND performance_qtr = '${curr_performance_qtr}';
+""")
+cursor.execute(query)
+logging.info("Rows affected: {}".format(cursor.rowcount))
+
+# Step 2: Insert computed results
+query = exec_context.query_builder.prepare("""
+    INSERT INTO GBI_RETAIL_SEMANTIC_DB.RETAIL_APP.RTL_STR_METRIC_RATING_CURR_QTR_PVT
+    SELECT ... FROM ... WHERE ...;
+""")
+cursor.execute(query)
+logging.info("Rows affected: {}".format(cursor.rowcount))
+
+# Step 3: Explicit commit
+exec_context.connection.commit()</pre>
+      <div class="say" style="margin-top:8px">
+        <b>Say this in the interview:</b> &ldquo;The actual data loading is done through DELETE + INSERT patterns within nodes &mdash; we selectively delete the target partition first, then re-insert computed results. We log cursor.rowcount after every DML statement for observability, and we commit explicitly at the end of each node.&rdquo;
+      </div>
+    </div>
+
+    <!-- Observability & Auditing -->
+    <div class="card">
+      <div class="tag" style="background:var(--amber-f);color:var(--amber-t1);font-weight:500">F &bull; Observability &amp; Auditing</div>
+      <h3 style="margin: 6px 0 4px; font-size: 14.5px;">Logging Session IDs, Rowcounts &amp; Snowflake Query IDs</h3>
+      <p style="margin-bottom:8px">Every node provides transparent runtime tracking by querying metadata and Snowflake session history tables.</p>
+      <pre class="code"># Capture Session ID
+logging.info("---SESSION ID--- {}".format(rows[0]))
+
+# Capture rows affected after every DML
+logging.info("Rows affected: {}".format(cursor.rowcount))
+
+# Query Snowflake information schema to capture Query ID
+query = exec_context.query_builder.prepare("""
+    SELECT query_id 
+    FROM table(information_schema.query_history_by_session())
+    ORDER BY start_time DESC LIMIT 1;
+""")
+cursor.execute(query)
+logging.info("---QUERY ID--- {}".format(cursor.fetchone()[0]))</pre>
+      <div class="say" style="margin-top:8px">
+        <b>Say this in the interview:</b> &ldquo;Every node logs the session ID at the start, the row count after every DML, and we query Snowflake's information_schema.query_history_by_session to capture the actual Snowflake query ID for post-run auditing and debugging.&rdquo;
+      </div>
+    </div>
+  </div>
+
+  <!-- Section 3: Likely Follow-Up Questions & Your Answers -->
+  <h3 style="margin-top:24px">3 · Likely follow-up questions &amp; your answers</h3>
+  <p class="sub">Three core architectural questions interviewers ask about this pipeline, with exact high-scoring answers.</p>
+
+  <div class="grid" style="grid-template-columns: 1fr; gap: 14px; margin-top: 10px;">
+    <div class="card">
+      <div class="tag" style="background:var(--purple-f);color:var(--purple-t1);font-weight:500">Pipeline Resiliency &amp; Failure Recovery</div>
+      <h3 style="margin: 6px 0 8px; font-size: 15px;">&ldquo;How do you handle failures mid-pipeline?&rdquo;</h3>
+      <div class="say" style="margin-top:4px">
+        &ldquo;The job config defines a <code>restartPolicy: standard</code> and <code>retryCount</code>. If a node fails, the framework can restart from the failed node rather than re-running the entire job. We also have <code>maxSLA</code> defined &mdash; if the job exceeds that window, it alerts.&rdquo;
+      </div>
+    </div>
+
+    <div class="card">
+      <div class="tag" style="background:var(--teal-f);color:var(--teal-t1);font-weight:500">Data Integrity &amp; Partition Management</div>
+      <h3 style="margin: 6px 0 8px; font-size: 15px;">&ldquo;How do you ensure idempotency?&rdquo;</h3>
+      <div class="say" style="margin-top:4px">
+        &ldquo;The <b>DELETE + INSERT</b> pattern ensures we can re-run safely &mdash; we always clear the target partition before writing, keyed on <code>Performance_year</code> and <code>Performance_qtr</code>, so there's no risk of duplicates on a retry.&rdquo;
+      </div>
+    </div>
+
+    <div class="card">
+      <div class="tag" style="background:var(--coral-f);color:var(--coral-t1);font-weight:500">CI/CD &amp; Release Engineering</div>
+      <h3 style="margin: 6px 0 8px; font-size: 15px;">&ldquo;How do you test before promoting to production?&rdquo;</h3>
+      <div class="say" style="margin-top:4px">
+        &ldquo;We have separate <b>Darwin</b> environments &mdash; <b>E19 for DEV, E21 for TEST, E27 for PROD</b> &mdash; each with their own SLA and priority configurations. The job is promoted through these environments with the same code but different connection targets.&rdquo;
+      </div>
+    </div>
+  </div>
+
+  <!-- Section 4: Flashcards & Quiz Mode -->
+  <h3 style="margin-top:24px">4 · Pipeline architecture flashcards</h3>
+  <p class="sub">Click each card to reveal the interview answer or practice in quiz mode.</p>
+  <div class="filters" id="pipeFilters"></div>
+  <div class="row">
+    <label><input type="checkbox" id="pipeStar"> Most asked only</label>
+    <span class="chip" id="pipeCount"></span>
+    <button class="btn" id="pipeQuizStart">Quiz me on these</button>
+  </div>
+  <div class="panel" id="pipeQuiz" style="display:none"></div>
+  <div class="grid" id="pipeFlash"></div>
+</section>
+
+
+
+<section class="view" id="v10">
+  <div style="display: flex; justify-content: space-between; align-items: flex-start; flex-wrap: wrap; gap: 10px; margin-bottom: 4px;">
+    <div>
+      <h2 id="profHeaderTitle" style="margin-bottom: 2px;">Candidate Profile &amp; Elevator Pitch &mdash; Saurav Patel</h2>
+      <p class="sub" style="margin-bottom: 0;">Personal background, &ldquo;Tell Me About Yourself&rdquo; interview delivery script, core role competencies, and cross-functional project storytelling.</p>
+    </div>
+    <button class="btn btn-primary" id="btnOpenResumeModal" style="display: inline-flex; align-items: center; gap: 6px; padding: 7px 14px; font-size: 13px;">
+      ✏️ Update Resume Details
+    </button>
+  </div>
+  <h2>Candidate Profile &amp; Elevator Pitch &mdash; Saurav Patel</h2>
+  <p class="sub">Personal background, &ldquo;Tell Me About Yourself&rdquo; interview delivery script, core role competencies, and cross-functional project storytelling.</p>
+
+  <!-- 1. The Perfect 90-Second Interview Elevator Pitch -->
+  <h3>1 &middot; &ldquo;Tell me about yourself&rdquo; &mdash; 90-second interview delivery</h3>
+  <p class="sub">Structured according to Present &rarr; Past &rarr; Key Strengths &rarr; Business Impact.</p>
+
+  <div class="card" style="margin-top:10px">
+    <div class="tag" style="background:var(--purple-f);color:var(--purple-t1);font-weight:500">Spoken Elevator Pitch</div>
+    <div class="say" id="profPitchBox" style="margin-top:6px; font-size:14px; line-height:1.75;">
+      &ldquo;Hi, my name is <b>Saurav Patel</b>. I'm based in Kolkata, and I completed my <b>B.Tech in Computer Science in 2021</b>.<br><br>
+      Right after graduation, I joined <b>Infosys</b>, where I have been working for the past <b>5 years</b> as a dual-skilled <b>Snowflake Developer and Tableau Developer</b>.<br><br>
+      On the <b>Snowflake side</b>, I have hands-on experience handling high-volume data architectures &mdash; building scalable Python and DAGKit ELT pipelines, optimizing query execution profiles, enforcing transactional idempotency, and ensuring strict data governance and quality.<br><br>
+      On the <b>Tableau side</b>, I specialize in transforming those massive analytical datasets into intuitive, high-performance dashboards that enable leadership and business stakeholders to make fast, data-driven decisions.<br><br>
+      Across my career, I've owned end-to-end data lifecycles &mdash; from raw ingestion and automated transformation to downstream serving in SingleStore and executive visual reporting &mdash; collaborating closely with cross-functional engineering, analytics, and business teams.&rdquo;
+    </div>
+  </div>
+
+  <!-- 2. Profile Snapshot & Core Pillars Table -->
+  <h3 style="margin-top:24px">2 &middot; Professional profile summary &amp; core pillars</h3>
+  <p class="sub">Key credentials, tech stacks, and domain expertise mapped to interview expectations.</p>
+  <div id="profileTable"></div>
+
+  <!-- Visual End-to-End Delivery Flow -->
+  <div class="vis" style="margin-top:14px">
+    <svg viewBox="0 0 680 160" xmlns="http://www.w3.org/2000/svg">
+      <g class="c-purple">
+        <rect class="box" x="15" y="24" width="135" height="66" rx="8"/>
+        <text class="th" x="82" y="46" text-anchor="middle" dominant-baseline="central">Ingestion</text>
+        <text class="ts" x="82" y="66" text-anchor="middle" dominant-baseline="central">Python &bull; DAGKit</text>
+      </g>
+      <line class="arr" x1="150" y1="57" x2="178" y2="57" marker-end="url(#arr2)"/>
+
+      <g class="c-teal">
+        <rect class="box" x="182" y="16" width="160" height="82" rx="8"/>
+        <text class="th" x="262" y="38" text-anchor="middle" dominant-baseline="central">Snowflake ELT</text>
+        <text class="ts" x="262" y="56" text-anchor="middle" dominant-baseline="central">SQL &bull; Tuning &bull; Pruning</text>
+        <text class="ts" x="262" y="74" text-anchor="middle" dominant-baseline="central">Streams &bull; Tasks &bull; DML</text>
+      </g>
+      <line class="arr" x1="342" y1="57" x2="370" y2="57" marker-end="url(#arr2)"/>
+
+      <g class="c-amber">
+        <rect class="box" x="374" y="24" width="135" height="66" rx="8"/>
+        <text class="th" x="441" y="46" text-anchor="middle" dominant-baseline="central">Serving Tier</text>
+        <text class="ts" x="441" y="66" text-anchor="middle" dominant-baseline="central">SingleStore &bull; S3</text>
+      </g>
+      <line class="arr" x1="509" y1="57" x2="537" y2="57" marker-end="url(#arr2)"/>
+
+      <g class="c-coral">
+        <rect class="box" x="541" y="16" width="124" height="82" rx="8"/>
+        <text class="th" x="603" y="38" text-anchor="middle" dominant-baseline="central">Tableau BI</text>
+        <text class="ts" x="603" y="56" text-anchor="middle" dominant-baseline="central">Visual Analytics</text>
+        <text class="ts" x="603" y="74" text-anchor="middle" dominant-baseline="central">Business Impact</text>
+      </g>
+
+      <g class="c-gray">
+        <rect class="inner" x="15" y="108" width="650" height="34" rx="6"/>
+        <text class="ts" x="340" y="125" text-anchor="middle" dominant-baseline="central">End-to-End Ownership: 5 Years at Infosys delivering data solutions from raw sources to C-suite reporting</text>
+      </g>
+    </svg>
+  </div>
+
+  <!-- 3. Dual-Specialization Deep Dive -->
+  <h3 style="margin-top:24px">3 &middot; Dual-specialization interview talking points</h3>
+  <p class="sub">How to articulate your value on both sides of the modern data stack.</p>
+
+  <div class="cols2" style="margin-top:10px">
+    <div class="card">
+      <div class="tag" style="background:var(--teal-f);color:var(--teal-t1);font-weight:500">Snowflake Developer Focus</div>
+      <h3 style="margin: 6px 0 6px; font-size:14.5px;">Data Engineering &amp; Warehouse Architecture</h3>
+      <ul id="profSfList" style="padding-left:18px; font-size:13px; line-height:1.6;">
+        <li><b>Scalable Pipelines:</b> Engineered robust ELT flows handling millions of records using Python, DAGKit SDK, and Snowflake SQL.</li>
+        <li><b>Query Optimization:</b> Expert at diagnosing Query Profiles, resolving spilling to local/remote storage, and maximizing partition pruning.</li>
+        <li><b>Transactional Integrity:</b> Designed idempotent <code>DELETE + INSERT</code> patterns with explicit transaction management and session-level auditing.</li>
+        <li><b>Semi-Structured Data:</b> Fluent with <code>VARIANT</code>, dot-path querying, <code>LATERAL FLATTEN</code>, and automated schema evolution.</li>
+      </ul>
+    </div>
+
+    <div class="card">
+      <div class="tag" style="background:var(--coral-f);color:var(--coral-t1);font-weight:500">Tableau Developer Focus</div>
+      <h3 style="margin: 6px 0 6px; font-size:14.5px;">BI, Visualization &amp; Stakeholder Decision-Making</h3>
+      <ul id="profTabList" style="padding-left:18px; font-size:13px; line-height:1.6;">
+        <li><b>Interactive Dashboards:</b> Built enterprise dashboards delivering drill-downs, parameters, and dynamic actions for executive leadership.</li>
+        <li><b>Data Modeling for BI:</b> Crafted optimized star-schema semantic layers and published data sources to ensure sub-second dashboard rendering.</li>
+        <li><b>Complex Calculations:</b> Proficient in Tableau Level of Detail (LOD) expressions (<code>FIXED</code>, <code>INCLUDE</code>, <code>EXCLUDE</code>) and table calculations.</li>
+        <li><b>Cross-Functional Collaboration:</b> Translated ambiguous business KPIs from finance, retail, and ops teams into automated analytical stories.</li>
+      </ul>
+    </div>
+  </div>
+
+  <!-- 4. Profile & Elevator Pitch Flashcards -->
+  <h3 style="margin-top:24px">4 &middot; Candidate profile flashcards</h3>
+  <p class="sub">Practice answering common personal &amp; introductory interview questions.</p>
+  <div class="filters" id="profFilters"></div>
+  <div class="row">
+    <label><input type="checkbox" id="profStar"> Most asked only</label>
+    <span class="chip" id="profCount"></span>
+    <button class="btn" id="profQuizStart">Quiz me on these</button>
+  </div>
+  <div class="panel" id="profQuiz" style="display:none"></div>
+  <div class="grid" id="profFlash"></div>
+</section>
+
 <script>
 const NS = 'http://www.w3.org/2000/svg';
 
@@ -346,12 +740,28 @@ function statusPill(x, y, text, kind) {
          `<text class="ts" x="${x + w / 2}" y="${y + 11}" text-anchor="middle" dominant-baseline="central">${text}</text></g>`;
 }
 
-/* Tab switching */
+/* Tab switching (Event Delegation + Direct Binding) */
 function showView(id) {
-  document.querySelectorAll('#tabs button').forEach(x => x.classList.toggle('on', x.dataset.v === id));
-  document.querySelectorAll('.view').forEach(v => v.classList.toggle('on', v.id === id));
+  if (!id) return;
+  document.querySelectorAll('#tabs button').forEach(x => {
+    x.classList.toggle('on', x.getAttribute('data-v') === id);
+  });
+  document.querySelectorAll('.view').forEach(v => {
+    v.classList.toggle('on', v.id === id);
+  });
+  window.scrollTo({ top: 0, behavior: 'smooth' });
 }
-document.querySelectorAll('#tabs button').forEach(b => b.addEventListener('click', () => showView(b.dataset.v)));
+
+// Event delegation on the container ensures clicks ALWAYS trigger even if buttons are dynamic
+const tabsContainer = document.getElementById('tabs');
+if (tabsContainer) {
+  tabsContainer.addEventListener('click', e => {
+    const btn = e.target.closest('button[data-v]');
+    if (btn) {
+      showView(btn.getAttribute('data-v'));
+    }
+  });
+}
 
 /* View 1: layers */
 const LAYERS = [
@@ -1515,6 +1925,287 @@ const SQLCARDS = [
   ['Performance', 0, 'What does ACID mean?', 'Atomicity, Consistency, Isolation, Durability: a transaction is all-or-nothing, valid, isolated and permanent.']
 ];
 setupDeck(SQLCARDS, { filters: 'sqlFilters', star: 'sqlStar', count: 'sqlCount', start: 'sqlQuizStart', quiz: 'sqlQuiz', grid: 'sqlFlash' }, 'Your mistakes', 'your mistake');
+
+
+/* ---------- Tab 9: Pipeline Architecture & Interview Q&A ---------- */
+const PIPE_TABLE_DATA = [
+  ['Framework', 'Python + DAGKit SDK (<code>Job</code>, <code>@job.node</code> decorator)'],
+  ['Connection', 'Managed via <code>exec_context.connection</code>, cursor-based'],
+  ['Parameterization', 'Runtime variables set in <code>Set_Variables</code>, injected via <code>query_builder.prepare()</code>'],
+  ['Branching', 'Node return value is a list of next nodes to activate (or <code>Dummy_Node</code> for no-op exit)'],
+  ['DML Pattern', '<code>DELETE partition &rarr; INSERT computed results &rarr; COMMIT</code> (Idempotent)'],
+  ['Observability', 'Session ID + rowcount logging + Snowflake Query ID capture from <code>information_schema</code>'],
+  ['Downstream', 'After Snowflake load, <b>EXP</b> job exports to S3, <b>LDR</b> job loads into SingleStore']
+];
+
+document.getElementById('pipelineTable').innerHTML = tbl(['Step', 'Technical Detail'], PIPE_TABLE_DATA);
+
+const PIPECARDS = [
+  ['Failures', 1, 'How do you handle failures mid-pipeline?', 'The job config defines a restartPolicy: standard and retryCount. If a node fails, the framework restarts from the failed node rather than re-running the entire job. Also, maxSLA triggers an alert if exceeded.'],
+  ['Idempotency', 1, 'How do you ensure idempotency?', 'The DELETE + INSERT pattern ensures safe re-runs: we always clear the target partition before writing, keyed on Performance_year and Performance_qtr, preventing duplicate rows.'],
+  ['Environments', 1, 'How do you test before promoting to production?', 'Separate Darwin environments: E19 (DEV), E21 (TEST), and E27 (PROD), each with distinct SLA and priority settings. Same code is promoted across environments with different connection targets.'],
+  ['Framework', 1, 'What orchestration framework is used and how does it manage state?', 'Custom Python DAGKit SDK. Pipelines are Job objects; steps are @job.node decorated functions receiving JobContext, NodeContext, and ExecutionContext. State is shared via exec_context.variable.set/get.'],
+  ['Execution', 0, 'How is SQL executed against Snowflake in Python?', 'Through exec_context.connection.cursor(). Queries are parameterized via exec_context.query_builder.prepare(), and connections are pooled/managed by the framework.'],
+  ['Branching', 0, 'How does runtime branching work in DAGKit?', 'The return value of a node function is a list of node names to activate next. If there is no work to process, it returns ["Dummy_Node"] as a graceful exit.'],
+  ['Observability', 0, 'What observability mechanisms are captured for each run?', 'Session ID at start, cursor.rowcount after every DML statement, and Snowflake Query ID queried from table(information_schema.query_history_by_session()).'],
+  ['Downstream', 0, 'What downstream jobs run after Snowflake processing completes?', 'Downstream EXP job exports aggregated data from Snowflake into AWS S3, then an LDR job loads the S3 files into SingleStore for high-speed serving.']
+];
+
+setupDeck(PIPECARDS, { filters: 'pipeFilters', star: 'pipeStar', count: 'pipeCount', start: 'pipeQuizStart', quiz: 'pipeQuiz', grid: 'pipeFlash' }, 'Failures', 'interview priority');
+
+
+/* ---------- Tab 10: Candidate Profile & Interview Elevator Pitch ---------- */
+const DEFAULT_PROFILE = {
+  name: "Saurav Patel",
+  location: "Kolkata, West Bengal, India",
+  education: "B.Tech in Computer Science (Graduated 2021)",
+  experience: "Infosys • 5 Years of Experience",
+  roles: "Snowflake Developer & Tableau Developer",
+  stack: "Snowflake, SQL (Advanced), Python (DAGKit SDK), Tableau, SingleStore, AWS S3",
+  scope: "End-to-end data solutions: Ingestion → Warehousing → Semantic Modeling → Executive Dashboards",
+  superpower: "Bridging complex backend data engineering with intuitive executive-level BI visualization",
+  pitch: `“Hi, my name is <b>Saurav Patel</b>. I'm based in Kolkata, and I completed my <b>B.Tech in Computer Science in 2021</b>.<br><br>Right after graduation, I joined <b>Infosys</b>, where I have been working for the past <b>5 years</b> as a dual-skilled <b>Snowflake Developer and Tableau Developer</b>.<br><br>On the <b>Snowflake side</b>, I have hands-on experience handling high-volume data architectures — building scalable Python and DAGKit ELT pipelines, optimizing query execution profiles, enforcing transactional idempotency, and ensuring strict data governance and quality.<br><br>On the <b>Tableau side</b>, I specialize in transforming those massive analytical datasets into intuitive, high-performance dashboards that enable leadership and business stakeholders to make fast, data-driven decisions.<br><br>Across my career, I've owned end-to-end data lifecycles — from raw ingestion and automated transformation to downstream serving in SingleStore and executive visual reporting — collaborating closely with cross-functional engineering, analytics, and business teams.”`,
+  sfHighlights: [
+    "<b>Scalable Pipelines:</b> Engineered robust ELT flows handling millions of records using Python, DAGKit SDK, and Snowflake SQL.",
+    "<b>Query Optimization:</b> Expert at diagnosing Query Profiles, resolving spilling to local/remote storage, and maximizing partition pruning.",
+    "<b>Transactional Integrity:</b> Designed idempotent <code>DELETE + INSERT</code> patterns with explicit transaction management and session-level auditing.",
+    "<b>Semi-Structured Data:</b> Fluent with <code>VARIANT</code>, dot-path querying, <code>LATERAL FLATTEN</code>, and automated schema evolution."
+  ],
+  tabHighlights: [
+    "<b>Interactive Dashboards:</b> Built enterprise dashboards delivering drill-downs, parameters, and dynamic actions for executive leadership.",
+    "<b>Data Modeling for BI:</b> Crafted optimized star-schema semantic layers and published data sources to ensure sub-second dashboard rendering.",
+    "<b>Complex Calculations:</b> Proficient in Tableau Level of Detail (LOD) expressions (<code>FIXED</code>, <code>INCLUDE</code>, <code>EXCLUDE</code>) and table calculations.",
+    "<b>Cross-Functional Collaboration:</b> Translated ambiguous business KPIs from finance, retail, and ops teams into automated analytical stories."
+  ]
+};
+
+function getSavedProfile() {
+  try {
+    const raw = localStorage.getItem('saurav_resume_profile_data');
+    if (raw) return { ...DEFAULT_PROFILE, ...JSON.parse(raw) };
+  } catch (e) {
+    console.warn("localStorage read error", e);
+  }
+  return { ...DEFAULT_PROFILE };
+}
+
+function saveProfile(data) {
+  try {
+    localStorage.setItem('saurav_resume_profile_data', JSON.stringify(data));
+  } catch (e) {
+    console.warn("localStorage write error", e);
+  }
+}
+
+function renderProfileUI(prof) {
+  // Update header title
+  const headEl = document.getElementById('profHeaderTitle');
+  if (headEl) headEl.innerHTML = `Candidate Profile &amp; Elevator Pitch &mdash; ${prof.name}`;
+
+  // Update pitch box
+  const pitchBox = document.getElementById('profPitchBox');
+  if (pitchBox) pitchBox.innerHTML = prof.pitch;
+
+  // Update profile table
+  const pTableData = [
+    ['Candidate Name', `<b>${prof.name}</b>`],
+    ['Current Location', prof.location],
+    ['Education', `<b>${prof.education}</b>`],
+    ['Company & Experience', `<b>${prof.experience}</b>`],
+    ['Primary Roles', `<b>${prof.roles}</b>`],
+    ['Core Technical Stack', prof.stack],
+    ['Delivery Scope', prof.scope],
+    ['Key Superpower', prof.superpower]
+  ];
+  const pTableEl = document.getElementById('profileTable');
+  if (pTableEl) pTableEl.innerHTML = tbl(['Area', 'Profile Highlights'], pTableData);
+
+  // Update bullet points
+  const sfList = document.getElementById('profSfList');
+  if (sfList && prof.sfHighlights) {
+    sfList.innerHTML = prof.sfHighlights.map(h => `<li>${h}</li>`).join('');
+  }
+  const tabList = document.getElementById('profTabList');
+  if (tabList && prof.tabHighlights) {
+    tabList.innerHTML = prof.tabHighlights.map(h => `<li>${h}</li>`).join('');
+  }
+}
+
+// Initialize rendering
+const currentProfile = getSavedProfile();
+renderProfileUI(currentProfile);
+
+// Modal controls
+const modal = document.getElementById('resumeModal');
+const btnOpen = document.getElementById('btnOpenResumeModal');
+const btnClose = document.getElementById('btnCloseResumeModal');
+const btnSave = document.getElementById('btnSaveResumeModal');
+const btnReset = document.getElementById('btnResetResumeModal');
+const toast = document.getElementById('toastMessage');
+
+function showToast(msg) {
+  if (!toast) return;
+  toast.textContent = msg || '✅ Profile updated successfully!';
+  toast.classList.add('show');
+  setTimeout(() => toast.classList.remove('show'), 3000);
+}
+
+function populateModalFields(prof) {
+  document.getElementById('inpName').value = prof.name;
+  document.getElementById('inpLoc').value = prof.location;
+  document.getElementById('inpEdu').value = prof.education;
+  document.getElementById('inpExp').value = prof.experience;
+  document.getElementById('inpRoles').value = prof.roles;
+  document.getElementById('inpStack').value = prof.stack;
+  document.getElementById('inpSuperpower').value = prof.superpower;
+  document.getElementById('inpPitch').value = prof.pitch.replace(/<br\s*[\/]?>/gi, "\n").replace(/<[^>]+>/g, "");
+  document.getElementById('inpSfHighlights').value = (prof.sfHighlights || []).map(s => s.replace(/<[^>]+>/g, "")).join("\n");
+  document.getElementById('inpTabHighlights').value = (prof.tabHighlights || []).map(s => s.replace(/<[^>]+>/g, "")).join("\n");
+}
+
+if (btnOpen) {
+  btnOpen.addEventListener('click', () => {
+    const prof = getSavedProfile();
+    populateModalFields(prof);
+    modal.classList.add('open');
+  });
+}
+
+if (btnClose) {
+  btnClose.addEventListener('click', () => modal.classList.remove('open'));
+}
+
+if (modal) {
+  modal.addEventListener('click', e => {
+    if (e.target === modal) modal.classList.remove('open');
+  });
+}
+
+if (btnSave) {
+  btnSave.addEventListener('click', () => {
+    const name = document.getElementById('inpName').value.trim() || DEFAULT_PROFILE.name;
+    const location = document.getElementById('inpLoc').value.trim() || DEFAULT_PROFILE.location;
+    const education = document.getElementById('inpEdu').value.trim() || DEFAULT_PROFILE.education;
+    const experience = document.getElementById('inpExp').value.trim() || DEFAULT_PROFILE.experience;
+    const roles = document.getElementById('inpRoles').value.trim() || DEFAULT_PROFILE.roles;
+    const stack = document.getElementById('inpStack').value.trim() || DEFAULT_PROFILE.stack;
+    const superpower = document.getElementById('inpSuperpower').value.trim() || DEFAULT_PROFILE.superpower;
+    
+    // Pitch formatting
+    const rawPitch = document.getElementById('inpPitch').value.trim();
+    const formattedPitch = rawPitch 
+      ? rawPitch.split(/\n{2,}/).map(para => para.replace(/\n/g, ' ')).join('<br><br>')
+      : DEFAULT_PROFILE.pitch;
+
+    // Highlights formatting
+    const rawSf = document.getElementById('inpSfHighlights').value.trim();
+    const sfHighlights = rawSf ? rawSf.split('\n').filter(Boolean) : DEFAULT_PROFILE.sfHighlights;
+
+    const rawTab = document.getElementById('inpTabHighlights').value.trim();
+    const tabHighlights = rawTab ? rawTab.split('\n').filter(Boolean) : DEFAULT_PROFILE.tabHighlights;
+
+    const updated = {
+      ...currentProfile,
+      name, location, education, experience, roles, stack, superpower,
+      pitch: formattedPitch.startsWith('“') ? formattedPitch : `“${formattedPitch}”`,
+      sfHighlights, tabHighlights
+    };
+
+    saveProfile(updated);
+    renderProfileUI(updated);
+    modal.classList.remove('open');
+    showToast('✅ Resume & profile details saved live!');
+  });
+}
+
+if (btnReset) {
+  btnReset.addEventListener('click', () => {
+    if (confirm('Reset profile details back to original defaults?')) {
+      localStorage.removeItem('saurav_resume_profile_data');
+      renderProfileUI(DEFAULT_PROFILE);
+      populateModalFields(DEFAULT_PROFILE);
+      modal.classList.remove('open');
+      showToast('🔄 Restored default profile information');
+    }
+  });
+}
+
+// Flashcards
+const PROFILECARDS = [
+  ['Elevator Pitch', 1, 'Can you introduce yourself? (Tell me about yourself)', 'I am Saurav Patel, based in Kolkata, with a B.Tech in CS (2021). For the past 5 years at Infosys, I have worked as a dual Snowflake and Tableau Developer, building end-to-end data pipelines, optimizing SQL on massive datasets, and converting complex data into decision-ready executive dashboards.'],
+  ['Dual Skill', 1, 'How does having both Snowflake and Tableau experience benefit you?', 'It gives me full-lifecycle visibility. When designing tables in Snowflake, I already know how Tableau queries them (avoiding live query bottlenecks, optimizing aggregations, and designing clean star schemas). When building dashboards, I can debug performance at the database layer rather than blaming the BI tool.'],
+  ['Snowflake Focus', 1, 'What is your primary focus as a Snowflake Developer?', 'Designing scalable ELT pipelines, optimizing query performance via Query Profile and micro-partition pruning, implementing idempotent DELETE + INSERT transactional loads, and establishing robust observability using session IDs and query history.'],
+  ['Tableau Focus', 1, 'What is your primary focus as a Tableau Developer?', 'Translating business requirements into high-performing interactive dashboards, designing semantic data layers, authoring complex LOD calculations, and enabling data-driven decision-making for non-technical stakeholders.'],
+  ['End-to-End Story', 0, 'Describe an end-to-end project you delivered at Infosys.', 'I orchestrated an ELT pipeline using Python and DAGKit to ingest fiscal data into Snowflake, performed partition-level metric calculations, exported subsets to SingleStore for low-latency operational queries, and surfaced the aggregated results through Tableau dashboards for business tracking.'],
+  ['Collaboration', 0, 'How do you collaborate with cross-functional teams?', 'I work closely with business analysts to clarify KPIs, collaborate with source-system engineers to handle schema drift, and partner with QA teams across separate Darwin DEV, TEST, and PROD environments before releasing production dashboards.'],
+  ['Strengths', 0, 'What are your key technical strengths?', 'Deep SQL tuning, micro-partition and caching optimization in Snowflake, automated Python orchestration with DAGKit, and creating clean, actionable Tableau visualizations that drive leadership decisions.']
+];
+
+setupDeck(PROFILECARDS, { filters: 'profFilters', star: 'profStar', count: 'profCount', start: 'profQuizStart', quiz: 'profQuiz', grid: 'profFlash' }, 'Elevator Pitch', 'core intro');
+
 </script>
+
+<!-- Resume / Profile Update Modal -->
+<div class="modal-overlay" id="resumeModal">
+  <div class="modal-card">
+    <div class="modal-head">
+      <h3>✏️ Update Resume &amp; Candidate Details</h3>
+      <button class="btn" id="btnCloseResumeModal" style="padding: 2px 8px; font-size: 16px; border:none; background:transparent; cursor:pointer;">&times;</button>
+    </div>
+    <div class="modal-body">
+      <div class="form-group">
+        <label>Full Name</label>
+        <input type="text" class="form-control" id="inpName" value="Saurav Patel">
+      </div>
+      <div class="cols2">
+        <div class="form-group">
+          <label>Location</label>
+          <input type="text" class="form-control" id="inpLoc" value="Kolkata, West Bengal, India">
+        </div>
+        <div class="form-group">
+          <label>Education &amp; Year</label>
+          <input type="text" class="form-control" id="inpEdu" value="B.Tech in Computer Science (2021)">
+        </div>
+      </div>
+      <div class="cols2">
+        <div class="form-group">
+          <label>Company &amp; Years of Experience</label>
+          <input type="text" class="form-control" id="inpExp" value="Infosys • 5 Years Experience">
+        </div>
+        <div class="form-group">
+          <label>Primary Roles</label>
+          <input type="text" class="form-control" id="inpRoles" value="Snowflake Developer &amp; Tableau Developer">
+        </div>
+      </div>
+      <div class="form-group">
+        <label>Core Technical Stack</label>
+        <input type="text" class="form-control" id="inpStack" value="Snowflake, SQL (Advanced), Python (DAGKit SDK), Tableau, SingleStore, AWS S3">
+      </div>
+      <div class="form-group">
+        <label>Key Superpower / Unique Value</label>
+        <input type="text" class="form-control" id="inpSuperpower" value="Bridging complex backend data engineering with intuitive executive-level BI visualization">
+      </div>
+      <div class="form-group">
+        <label>&ldquo;Tell Me About Yourself&rdquo; Elevator Pitch</label>
+        <textarea class="form-control" id="inpPitch" rows="4"></textarea>
+      </div>
+      <div class="form-group">
+        <label>Snowflake Developer Highlights (one bullet per line)</label>
+        <textarea class="form-control" id="inpSfHighlights" rows="3"></textarea>
+      </div>
+      <div class="form-group">
+        <label>Tableau Developer Highlights (one bullet per line)</label>
+        <textarea class="form-control" id="inpTabHighlights" rows="3"></textarea>
+      </div>
+    </div>
+    <div class="modal-foot">
+      <button class="btn btn-outline" id="btnResetResumeModal">Reset Defaults</button>
+      <button class="btn btn-primary" id="btnSaveResumeModal">💾 Save Changes</button>
+    </div>
+  </div>
+</div>
+
+<div class="toast" id="toastMessage">✅ Profile details updated successfully!</div>
+
 </body>
 </html>
