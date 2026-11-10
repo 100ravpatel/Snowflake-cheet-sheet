@@ -455,7 +455,7 @@
       <h3 style="margin: 6px 0 4px; font-size: 14.5px;">Custom Orchestration with DAGKit</h3>
       <p style="margin-bottom:8px">Each pipeline is instantiated as a <code>Job</code> object. Individual processing steps are decorated Python functions called nodes. The framework automatically manages connection pooling, variable passing, and contextual dependencies.</p>
       <pre class="code"># How you define a job and a node
-job = Job("DAILY_STORE_METRIC_RECAP_JOB")
+job = Job("JOB_NAME")
 
 @job.node("Set_Variables", "execute")
 def f(job_context: JobContext, node_context: NodeContext, exec_context: ExecutionContext):
