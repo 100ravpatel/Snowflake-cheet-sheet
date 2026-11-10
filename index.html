@@ -173,223 +173,128 @@
 <p class="sub">Think of Snowflake as a restaurant: a manager, chefs, and one shared pantry.</p>
 
 <div class="tabs" id="tabs">
-  <button class="on" data-v="v1">1 · Three layers</button>
-  <button data-v="v2">2 · Life of a query</button>
-  <button data-v="v3">3 · Storage vs compute</button>
-  <button data-v="v4">4 · Caches</button>
-  <button data-v="v5">5 · Features</button>
-  <button data-v="v7">6 · Interview topics</button>
-  <button data-v="v6">7 · Cheat sheet + flashcards</button>
-  <button data-v="v8">8 · SQL cheat sheet</button>
-  <button data-v="v9">9 · Pipeline flow &amp; interview Q&amp;A</button>
-  <button data-v="v10">10 · Profile &amp; elevator pitch</button>
+  <button class="on" data-v="v10">1 · Profile &amp; elevator pitch</button>
+  <button data-v="v9">2 · Pipeline flow &amp; interview Q&amp;A</button>
+  <button data-v="v1">3 · Three layers &amp; storage</button>
+  <button data-v="v3">4 · Storage vs compute</button>
+  <button data-v="v2">5 · Life of a query</button>
+  <button data-v="v4">6 · The three caches</button>
+  <button data-v="v5">7 · Core features</button>
+  <button data-v="v7">8 · Deep interview topics</button>
+  <button data-v="v8">9 · SQL cheat sheet &amp; joins</button>
+  <button data-v="v6">10 · Flashcards &amp; traps</button>
 </div>
 
-<section class="view on" id="v1">
-  <h2>The three layers</h2>
-  <p class="sub">Click a layer to see what it does.</p>
-  <svg id="layersSvg" viewBox="0 0 680 492" xmlns="http://www.w3.org/2000/svg"></svg>
-  <div class="legend">
-    <span style="--c:var(--purple-s)">Cloud services (manager)</span>
-    <span style="--c:var(--teal-s)">Compute (chefs)</span>
-    <span style="--c:var(--coral-s)">Storage (pantry)</span>
-  </div>
-  <div class="panel" id="layerInfo"></div>
-
-  <!-- Micro-partition 5-Step Interactive Visualizer -->
-  <h2 style="margin-top:32px;">How Snowflake stores a table: micro-partitions</h2>
-  <p class="sub" id="mpSubText">What you see in SQL: one logical table of rows and columns.</p>
-
-  <div id="mpVisualContainer" style="margin: 14px 0;"></div>
-
-  <div class="row" style="margin-top: 14px; gap: 6px;">
-    <button class="btn" id="mpBack">Back</button>
-    <button class="btn on" data-mp="0">1. Table</button>
-    <button class="btn" data-mp="1">2. Split</button>
-    <button class="btn" data-mp="2">3. Columnar</button>
-    <button class="btn" data-mp="3">4. Immutable</button>
-    <button class="btn" data-mp="4">5. Pruning</button>
-    <button class="btn" id="mpNext">Next</button>
+<section class="view on" id="v10">
+  <div style="display: flex; justify-content: space-between; align-items: flex-start; flex-wrap: wrap; gap: 10px; margin-bottom: 4px;">
+    <div>
+      <h2 id="profHeaderTitle" style="margin-bottom: 2px;">Candidate Profile &amp; Elevator Pitch &mdash; Saurav Patel</h2>
+      <p class="sub" style="margin-bottom: 0;">Personal background, &ldquo;Tell Me About Yourself&rdquo; interview delivery script, core role competencies, and cross-functional project storytelling.</p>
+    </div>
+    <button class="btn btn-primary" id="btnOpenResumeModal" style="display: inline-flex; align-items: center; gap: 6px; padding: 7px 14px; font-size: 13px;">
+      ✏️ Update Resume Details
+    </button>
   </div>
 
-</section>
+  <!-- 1. The Perfect 90-Second Interview Elevator Pitch -->
+  <h3>1 &middot; &ldquo;Tell me about yourself&rdquo; &mdash; 90-second interview delivery</h3>
+  <p class="sub">Structured according to Present &rarr; Past &rarr; Key Strengths &rarr; Business Impact.</p>
 
-<section class="view" id="v2">
-  <h2>Life of a query</h2>
-  <p class="sub">Step through what happens when you run <code>SELECT region, SUM(sales) FROM orders GROUP BY region;</code></p>
-  <svg id="querySvg" viewBox="0 0 680 300" xmlns="http://www.w3.org/2000/svg"></svg>
+  <div class="card" style="margin-top:10px">
+    <div class="tag" style="background:var(--purple-f);color:var(--purple-t1);font-weight:500">Spoken Elevator Pitch</div>
+    <div class="say" id="profPitchBox" style="margin-top:6px; font-size:14px; line-height:1.75;">
+      &ldquo;Hi, my name is <b>Saurav Patel</b>. I'm based in Kolkata, and I completed my <b>B.Tech in Computer Science in 2021</b>.<br><br>
+      Right after graduation, I joined <b>Infosys</b>, where I have been working for the past <b>5 years</b> as a dual-skilled <b>Snowflake Developer and Tableau Developer</b>.<br><br>
+      On the <b>Snowflake side</b>, I have hands-on experience handling high-volume data architectures &mdash; building scalable Python and DAGKit ELT pipelines, optimizing query execution profiles, enforcing transactional idempotency, and ensuring strict data governance and quality.<br><br>
+      On the <b>Tableau side</b>, I specialize in transforming those massive analytical datasets into intuitive, high-performance dashboards that enable leadership and business stakeholders to make fast, data-driven decisions.<br><br>
+      Across my career, I've owned end-to-end data lifecycles &mdash; from raw ingestion and automated transformation to downstream serving in SingleStore and executive visual reporting &mdash; collaborating closely with cross-functional engineering, analytics, and business teams.&rdquo;
+    </div>
+  </div>
+
+  <!-- 2. Profile Snapshot & Core Pillars Table -->
+  <h3 style="margin-top:24px">2 &middot; Professional profile summary &amp; core pillars</h3>
+  <p class="sub">Key credentials, tech stacks, and domain expertise mapped to interview expectations.</p>
+  <div id="profileTable"></div>
+
+  <!-- Visual End-to-End Delivery Flow -->
+  <div class="vis" style="margin-top:14px">
+    <svg viewBox="0 0 680 160" xmlns="http://www.w3.org/2000/svg">
+      <g class="c-purple">
+        <rect class="box" x="15" y="24" width="135" height="66" rx="8"/>
+        <text class="th" x="82" y="46" text-anchor="middle" dominant-baseline="central">Ingestion</text>
+        <text class="ts" x="82" y="66" text-anchor="middle" dominant-baseline="central">Python &bull; DAGKit</text>
+      </g>
+      <line class="arr" x1="150" y1="57" x2="178" y2="57" marker-end="url(#arr2)"/>
+
+      <g class="c-teal">
+        <rect class="box" x="182" y="16" width="160" height="82" rx="8"/>
+        <text class="th" x="262" y="38" text-anchor="middle" dominant-baseline="central">Snowflake ELT</text>
+        <text class="ts" x="262" y="56" text-anchor="middle" dominant-baseline="central">SQL &bull; Tuning &bull; Pruning</text>
+        <text class="ts" x="262" y="74" text-anchor="middle" dominant-baseline="central">Streams &bull; Tasks &bull; DML</text>
+      </g>
+      <line class="arr" x1="342" y1="57" x2="370" y2="57" marker-end="url(#arr2)"/>
+
+      <g class="c-amber">
+        <rect class="box" x="374" y="24" width="135" height="66" rx="8"/>
+        <text class="th" x="441" y="46" text-anchor="middle" dominant-baseline="central">Serving Tier</text>
+        <text class="ts" x="441" y="66" text-anchor="middle" dominant-baseline="central">SingleStore &bull; S3</text>
+      </g>
+      <line class="arr" x1="509" y1="57" x2="537" y2="57" marker-end="url(#arr2)"/>
+
+      <g class="c-coral">
+        <rect class="box" x="541" y="16" width="124" height="82" rx="8"/>
+        <text class="th" x="603" y="38" text-anchor="middle" dominant-baseline="central">Tableau BI</text>
+        <text class="ts" x="603" y="56" text-anchor="middle" dominant-baseline="central">Visual Analytics</text>
+        <text class="ts" x="603" y="74" text-anchor="middle" dominant-baseline="central">Business Impact</text>
+      </g>
+
+      <g class="c-gray">
+        <rect class="inner" x="15" y="108" width="650" height="34" rx="6"/>
+        <text class="ts" x="340" y="125" text-anchor="middle" dominant-baseline="central">End-to-End Ownership: 5 Years at Infosys delivering data solutions from raw sources to C-suite reporting</text>
+      </g>
+    </svg>
+  </div>
+
+  <!-- 3. Dual-Specialization Deep Dive -->
+  <h3 style="margin-top:24px">3 &middot; Dual-specialization interview talking points</h3>
+  <p class="sub">How to articulate your value on both sides of the modern data stack.</p>
+
+  <div class="cols2" style="margin-top:10px">
+    <div class="card">
+      <div class="tag" style="background:var(--teal-f);color:var(--teal-t1);font-weight:500">Snowflake Developer Focus</div>
+      <h3 style="margin: 6px 0 6px; font-size:14.5px;">Data Engineering &amp; Warehouse Architecture</h3>
+      <ul id="profSfList" style="padding-left:18px; font-size:13px; line-height:1.6;">
+        <li><b>Scalable Pipelines:</b> Engineered robust ELT flows handling millions of records using Python, DAGKit SDK, and Snowflake SQL.</li>
+        <li><b>Query Optimization:</b> Expert at diagnosing Query Profiles, resolving spilling to local/remote storage, and maximizing partition pruning.</li>
+        <li><b>Transactional Integrity:</b> Designed idempotent <code>DELETE + INSERT</code> patterns with explicit transaction management and session-level auditing.</li>
+        <li><b>Semi-Structured Data:</b> Fluent with <code>VARIANT</code>, dot-path querying, <code>LATERAL FLATTEN</code>, and automated schema evolution.</li>
+      </ul>
+    </div>
+
+    <div class="card">
+      <div class="tag" style="background:var(--coral-f);color:var(--coral-t1);font-weight:500">Tableau Developer Focus</div>
+      <h3 style="margin: 6px 0 6px; font-size:14.5px;">BI, Visualization &amp; Stakeholder Decision-Making</h3>
+      <ul id="profTabList" style="padding-left:18px; font-size:13px; line-height:1.6;">
+        <li><b>Interactive Dashboards:</b> Built enterprise dashboards delivering drill-downs, parameters, and dynamic actions for executive leadership.</li>
+        <li><b>Data Modeling for BI:</b> Crafted optimized star-schema semantic layers and published data sources to ensure sub-second dashboard rendering.</li>
+        <li><b>Complex Calculations:</b> Proficient in Tableau Level of Detail (LOD) expressions (<code>FIXED</code>, <code>INCLUDE</code>, <code>EXCLUDE</code>) and table calculations.</li>
+        <li><b>Cross-Functional Collaboration:</b> Translated ambiguous business KPIs from finance, retail, and ops teams into automated analytical stories.</li>
+      </ul>
+    </div>
+  </div>
+
+  <!-- 4. Profile & Elevator Pitch Flashcards -->
+  <h3 style="margin-top:24px">4 &middot; Candidate profile flashcards</h3>
+  <p class="sub">Practice answering common personal &amp; introductory interview questions.</p>
+  <div class="filters" id="profFilters"></div>
   <div class="row">
-    <button class="btn" id="qBack">Back</button>
-    <button class="btn" id="qNext">Next</button>
-    <div class="dots" id="qDots"></div>
+    <label><input type="checkbox" id="profStar"> Most asked only</label>
+    <span class="chip" id="profCount"></span>
+    <button class="btn" id="profQuizStart">Quiz me on these</button>
   </div>
-  <div class="panel" id="queryInfo"></div>
+  <div class="panel" id="profQuiz" style="display:none"></div>
+  <div class="grid" id="profFlash"></div>
 </section>
-
-<section class="view" id="v3">
-  <h2>Separation of storage and compute</h2>
-  <p class="sub">Switch views and try the scenarios.</p>
-  <div class="row" style="margin-top:0">
-    <button class="btn" id="archOld">Traditional warehouse</button>
-    <button class="btn" id="archNew">Snowflake</button>
-  </div>
-  <svg id="archSvg" viewBox="0 0 680 380" xmlns="http://www.w3.org/2000/svg" style="margin-top:10px"></svg>
-  <div class="row">
-    <label><input type="checkbox" id="etlLoad"> ETL team runs a heavy load</label>
-    <label id="suspendWrap"><input type="checkbox" id="biSuspend"> Suspend the BI warehouse</label>
-  </div>
-  <div class="row" id="sizeRow">
-    <label>ETL warehouse size</label>
-    <input type="range" id="whSize" min="0" max="9" step="1" value="3">
-    <span id="whSizeVal" class="mono"></span>
-  </div>
-  <div class="panel" id="archInfo"></div>
-</section>
-
-<section class="view" id="v4">
-  <h2>The three caches</h2>
-  <p class="sub">Press the buttons and watch which cache answers the query.</p>
-  <div class="grid">
-    <div class="card" id="cResult"><h3>Result cache</h3><p>Lives in cloud services. Same query and unchanged data: reused for 24 hours. No warehouse needed.</p></div>
-    <div class="card" id="cLocal"><h3>Local disk cache</h3><p>Lives in the warehouse SSD. Speeds up repeat reads. Lost when it suspends.</p></div>
-    <div class="card" id="cMeta"><h3>Metadata cache</h3><p>Row counts, min and max per micro-partition. COUNT(*), MIN, MAX need no warehouse.</p></div>
-    <div class="card" id="cRemote"><h3>Remote storage</h3><p>No cache helped. Data fetched from cloud storage. Slowest path.</p></div>
-  </div>
-  <div class="row">
-    <button class="btn" id="bRun">Run sales query</button>
-    <button class="btn" id="bCount">Run SELECT COUNT(*)</button>
-    <button class="btn" id="bInsert">Insert new rows</button>
-    <button class="btn" id="bSuspend">Suspend warehouse</button>
-    <button class="btn" id="bReset">Reset</button>
-  </div>
-  <div class="row">
-    <span class="chip" id="sWh"></span><span class="chip" id="sSsd"></span><span class="chip" id="sRes"></span>
-  </div>
-  <div class="panel log" id="cacheLog">Press <b>Run sales query</b> to start.</div>
-</section>
-
-<section class="view" id="v5">
-  <h2>Features the architecture makes possible</h2>
-  <p class="sub">Micro-partitions are never edited in place. A change writes new ones, and metadata remembers the old ones. That single idea powers all four features.</p>
-  <h3>Time Travel and Fail-safe</h3>
-  <svg id="ttSvg" viewBox="0 0 680 150" xmlns="http://www.w3.org/2000/svg"></svg>
-  <div class="row">
-    <label>Retention</label>
-    <select id="ttRet"><option value="1">1 day (default)</option><option value="90">90 days (Enterprise max)</option></select>
-    <label>Days since the table was dropped</label>
-    <input type="range" id="ttDays" min="0" max="18" step="1" value="0">
-    <span id="ttDaysVal" class="mono"></span>
-  </div>
-  <div class="panel" id="ttInfo"></div>
-  <h3 style="margin-top:22px">Zero-copy cloning and secure data sharing</h3>
-  <svg viewBox="0 0 680 230" xmlns="http://www.w3.org/2000/svg">
-    <text class="th" x="180" y="30" text-anchor="middle">Zero-copy clone</text>
-    <text class="th" x="510" y="30" text-anchor="middle">Secure data sharing</text>
-    <g class="c-teal">
-      <rect class="box" x="50" y="48" width="110" height="44" rx="8"/>
-      <text class="th" x="105" y="70" text-anchor="middle" dominant-baseline="central">orders</text>
-      <rect class="box" x="190" y="48" width="120" height="44" rx="8"/>
-      <text class="th" x="250" y="70" text-anchor="middle" dominant-baseline="central">orders_dev</text>
-      <rect class="box" x="370" y="48" width="110" height="44" rx="8"/>
-      <text class="th" x="425" y="70" text-anchor="middle" dominant-baseline="central">Provider</text>
-      <rect class="box" x="510" y="48" width="120" height="44" rx="8"/>
-      <text class="th" x="570" y="70" text-anchor="middle" dominant-baseline="central">Consumer</text>
-    </g>
-    <line class="arr" x1="105" y1="92" x2="165" y2="136" marker-end="url(#arr2)"/>
-    <line class="arr" x1="250" y1="92" x2="190" y2="136" marker-end="url(#arr2)"/>
-    <line class="arr" x1="425" y1="92" x2="500" y2="136" marker-end="url(#arr2)"/>
-    <line class="arr" x1="570" y1="92" x2="525" y2="136" marker-end="url(#arr2)"/>
-    <g class="c-coral" id="cloneSquares"></g>
-    <text class="ts" x="180" y="196" text-anchor="middle">Copies metadata only<tspan x="180" dy="1.3em">pays storage only for changes</tspan></text>
-    <text class="ts" x="510" y="196" text-anchor="middle">No data is copied<tspan x="510" dy="1.3em">consumer uses its own warehouse</tspan></text>
-  </svg>
-</section>
-
-<section class="view" id="v7">
-  <h2>Interview topics from the article</h2>
-  <p class="sub">Every article question that tabs 1–5 don't already explain. Pick a group, then a topic. An amber dot means the article's answer is wrong or out of date, and the topic shows the correct version.</p>
-  <div class="row" style="margin:0 0 12px"><label>Jump to article question</label><select id="qJump"></select></div>
-  <div class="tabs subtabs" id="grpBar"></div>
-  <div class="topicbar" id="topicBar"></div>
-  <div id="topicPanel"></div>
-</section>
-
-<section class="view" id="v6">
-  <h2>Cheat sheet</h2>
-  <h3>Memory tricks</h3>
-  <table>
-    <tr><th>Remember</th><th>Means</th></tr>
-    <tr><td><b>Brain, muscle, pantry</b></td><td>Cloud services, compute (warehouses), storage</td></tr>
-    <tr><td><b>Scale up vs scale out</b></td><td>Up = bigger size for heavy queries. Out = more clusters for many users.</td></tr>
-    <tr><td><b>Caches: R, L, M</b></td><td>Result (24h, no warehouse), Local SSD (lost on suspend), Metadata (COUNT/MIN/MAX)</td></tr>
-    <tr><td><b>Suspend = no compute bill</b></td><td>Data stays safe in storage. Billing is per second, 60-second minimum.</td></tr>
-    <tr><td><b>Immutable micro-partitions</b></td><td>Enable pruning, Time Travel, Fail-safe, cloning, and sharing</td></tr>
-    <tr><td><b>Hybrid design</b></td><td>Shared-disk storage + shared-nothing (MPP) compute</td></tr>
-    <tr><td><b>Stage → COPY → table</b></td><td>PUT files into an internal stage (or point at a bucket), COPY INTO loads them. Snowpipe runs the COPY for you.</td></tr>
-    <tr><td><b>Fail-safe days 7 · 0 · 0</b></td><td>Permanent 7, transient 0, temporary 0. Only permanent tables get up to 90 days of Time Travel.</td></tr>
-    <tr><td><b>Stream = bookmark, task = alarm clock</b></td><td>A stream remembers what changed. A task runs SQL on a schedule, often reading the stream.</td></tr>
-    <tr><td><b>Prune before you pay</b></td><td>Check partitions scanned and spilling in Query Profile before buying a bigger warehouse.</td></tr>
-    <tr><td><b>Roles get privileges, users get roles</b></td><td>And you need USAGE on warehouse, database and schema before SELECT works.</td></tr>
-    <tr><td><b>Share = grants, not copies</b></td><td>Consumers read live data with their own warehouse. Only secure views can be shared.</td></tr>
-    <tr><td><b>Notify → suspend → suspend now</b></td><td>The three resource monitor actions</td></tr>
-    <tr><td><b>Editions S · E · B · V</b></td><td>Standard, Enterprise (scale + governance), Business Critical (compliance + failover), VPS (isolated)</td></tr>
-  </table>
-  <h3 style="margin-top:22px">Article answers to correct</h3>
-  <p class="sub">If an interviewer asks one of these, give the corrected answer.</p>
-  <div id="fixTable"></div>
-  <h3 style="margin-top:22px">Interview flashcards</h3>
-  <p class="sub">"Article traps" cards come first: the questions the article gets wrong. The quiz always asks them first too. Answer out loud, then click a card.</p>
-  <div class="filters" id="flashFilters"></div>
-  <div class="row">
-    <label><input type="checkbox" id="starOnly"> Most asked only</label>
-    <span class="chip" id="flashCount"></span>
-    <button class="btn" id="quizStart">Quiz me on these</button>
-  </div>
-  <div class="panel" id="quiz" style="display:none"></div>
-  <div class="grid" id="flash"></div>
-</section>
-
-
-<section class="view" id="v8">
-  <h2>SQL interview cheat sheet</h2>
-  <p class="sub">The most-asked SQL interview topics. Your own mistakes from our practice come first, so you don't repeat them in the interview.</p>
-
-  <h3>1 · Your mistakes from our practice</h3>
-  <p class="sub">Every slip from Questions 1–6, with the fix and the rule to remember.</p>
-  <div id="sqlMistakes"></div>
-
-  <h3 style="margin-top:22px">2 · Order of execution</h3>
-  <p class="sub">You write <code>SELECT</code> first, but the database runs it almost last. This one picture explains most "why doesn't this work?" questions.</p>
-  <div id="execOrder"></div>
-
-  <h3 style="margin-top:22px">3 · SQL joins, one dataset at a time</h3>
-  <p class="sub">Interactive visual breakdown across Standard, Filtering, Special, and Snowflake-native join types.</p>
-  <div id="joinDemo"></div>
-
-  <h3 style="margin-top:22px">4 · ROW_NUMBER vs RANK vs DENSE_RANK</h3>
-  <p class="sub">The Question 1 salaries. Highlighted cells show where the three functions differ.</p>
-  <div id="rankDemo"></div>
-
-  <h3 style="margin-top:22px">5 · Pattern library</h3>
-  <p class="sub">Ready-to-use answers to the classic interview problems. Pick one.</p>
-  <div id="patDemo"></div>
-
-  <h3 style="margin-top:22px">6 · NULL traps</h3>
-  <div id="nullTraps"></div>
-
-  <h3 style="margin-top:22px">7 · SQL interview flashcards</h3>
-  <p class="sub">"Your mistakes" cards come first, and the quiz always asks them first. Answer out loud, then click.</p>
-  <div class="filters" id="sqlFilters"></div>
-  <div class="row">
-    <label><input type="checkbox" id="sqlStar"> Most asked only</label>
-    <span class="chip" id="sqlCount"></span>
-    <button class="btn" id="sqlQuizStart">Quiz me on these</button>
-  </div>
-  <div class="panel" id="sqlQuiz" style="display:none"></div>
-  <div class="grid" id="sqlFlash"></div>
-</section>
-
-
 
 <section class="view" id="v9">
   <h2>Python-Based Data Processing into Snowflake (DAGKit Orchestration)</h2>
@@ -618,119 +523,207 @@ logging.info("---QUERY ID--- {}".format(cursor.fetchone()[0]))</pre>
   <div class="grid" id="pipeFlash"></div>
 </section>
 
-
-
-<section class="view" id="v10">
-  <div style="display: flex; justify-content: space-between; align-items: flex-start; flex-wrap: wrap; gap: 10px; margin-bottom: 4px;">
-    <div>
-      <h2 id="profHeaderTitle" style="margin-bottom: 2px;">Candidate Profile &amp; Elevator Pitch &mdash; Saurav Patel</h2>
-      <p class="sub" style="margin-bottom: 0;">Personal background, &ldquo;Tell Me About Yourself&rdquo; interview delivery script, core role competencies, and cross-functional project storytelling.</p>
-    </div>
-    <button class="btn btn-primary" id="btnOpenResumeModal" style="display: inline-flex; align-items: center; gap: 6px; padding: 7px 14px; font-size: 13px;">
-      ✏️ Update Resume Details
-    </button>
+<section class="view" id="v1">
+  <h2>The three layers</h2>
+  <p class="sub">Click a layer to see what it does.</p>
+  <svg id="layersSvg" viewBox="0 0 680 492" xmlns="http://www.w3.org/2000/svg"></svg>
+  <div class="legend">
+    <span style="--c:var(--purple-s)">Cloud services (manager)</span>
+    <span style="--c:var(--teal-s)">Compute (chefs)</span>
+    <span style="--c:var(--coral-s)">Storage (pantry)</span>
   </div>
-  <h2>Candidate Profile &amp; Elevator Pitch &mdash; Saurav Patel</h2>
-  <p class="sub">Personal background, &ldquo;Tell Me About Yourself&rdquo; interview delivery script, core role competencies, and cross-functional project storytelling.</p>
+  <div class="panel" id="layerInfo"></div>
 
-  <!-- 1. The Perfect 90-Second Interview Elevator Pitch -->
-  <h3>1 &middot; &ldquo;Tell me about yourself&rdquo; &mdash; 90-second interview delivery</h3>
-  <p class="sub">Structured according to Present &rarr; Past &rarr; Key Strengths &rarr; Business Impact.</p>
+  <!-- Micro-partition 5-Step Interactive Visualizer -->
+  <h2 style="margin-top:32px;">How Snowflake stores a table: micro-partitions</h2>
+  <p class="sub" id="mpSubText">What you see in SQL: one logical table of rows and columns.</p>
 
-  <div class="card" style="margin-top:10px">
-    <div class="tag" style="background:var(--purple-f);color:var(--purple-t1);font-weight:500">Spoken Elevator Pitch</div>
-    <div class="say" id="profPitchBox" style="margin-top:6px; font-size:14px; line-height:1.75;">
-      &ldquo;Hi, my name is <b>Saurav Patel</b>. I'm based in Kolkata, and I completed my <b>B.Tech in Computer Science in 2021</b>.<br><br>
-      Right after graduation, I joined <b>Infosys</b>, where I have been working for the past <b>5 years</b> as a dual-skilled <b>Snowflake Developer and Tableau Developer</b>.<br><br>
-      On the <b>Snowflake side</b>, I have hands-on experience handling high-volume data architectures &mdash; building scalable Python and DAGKit ELT pipelines, optimizing query execution profiles, enforcing transactional idempotency, and ensuring strict data governance and quality.<br><br>
-      On the <b>Tableau side</b>, I specialize in transforming those massive analytical datasets into intuitive, high-performance dashboards that enable leadership and business stakeholders to make fast, data-driven decisions.<br><br>
-      Across my career, I've owned end-to-end data lifecycles &mdash; from raw ingestion and automated transformation to downstream serving in SingleStore and executive visual reporting &mdash; collaborating closely with cross-functional engineering, analytics, and business teams.&rdquo;
-    </div>
+  <div id="mpVisualContainer" style="margin: 14px 0;"></div>
+
+  <div class="row" style="margin-top: 14px; gap: 6px;">
+    <button class="btn" id="mpBack">Back</button>
+    <button class="btn on" data-mp="0">1. Table</button>
+    <button class="btn" data-mp="1">2. Split</button>
+    <button class="btn" data-mp="2">3. Columnar</button>
+    <button class="btn" data-mp="3">4. Immutable</button>
+    <button class="btn" data-mp="4">5. Pruning</button>
+    <button class="btn" id="mpNext">Next</button>
   </div>
 
-  <!-- 2. Profile Snapshot & Core Pillars Table -->
-  <h3 style="margin-top:24px">2 &middot; Professional profile summary &amp; core pillars</h3>
-  <p class="sub">Key credentials, tech stacks, and domain expertise mapped to interview expectations.</p>
-  <div id="profileTable"></div>
+</section>
 
-  <!-- Visual End-to-End Delivery Flow -->
-  <div class="vis" style="margin-top:14px">
-    <svg viewBox="0 0 680 160" xmlns="http://www.w3.org/2000/svg">
-      <g class="c-purple">
-        <rect class="box" x="15" y="24" width="135" height="66" rx="8"/>
-        <text class="th" x="82" y="46" text-anchor="middle" dominant-baseline="central">Ingestion</text>
-        <text class="ts" x="82" y="66" text-anchor="middle" dominant-baseline="central">Python &bull; DAGKit</text>
-      </g>
-      <line class="arr" x1="150" y1="57" x2="178" y2="57" marker-end="url(#arr2)"/>
-
-      <g class="c-teal">
-        <rect class="box" x="182" y="16" width="160" height="82" rx="8"/>
-        <text class="th" x="262" y="38" text-anchor="middle" dominant-baseline="central">Snowflake ELT</text>
-        <text class="ts" x="262" y="56" text-anchor="middle" dominant-baseline="central">SQL &bull; Tuning &bull; Pruning</text>
-        <text class="ts" x="262" y="74" text-anchor="middle" dominant-baseline="central">Streams &bull; Tasks &bull; DML</text>
-      </g>
-      <line class="arr" x1="342" y1="57" x2="370" y2="57" marker-end="url(#arr2)"/>
-
-      <g class="c-amber">
-        <rect class="box" x="374" y="24" width="135" height="66" rx="8"/>
-        <text class="th" x="441" y="46" text-anchor="middle" dominant-baseline="central">Serving Tier</text>
-        <text class="ts" x="441" y="66" text-anchor="middle" dominant-baseline="central">SingleStore &bull; S3</text>
-      </g>
-      <line class="arr" x1="509" y1="57" x2="537" y2="57" marker-end="url(#arr2)"/>
-
-      <g class="c-coral">
-        <rect class="box" x="541" y="16" width="124" height="82" rx="8"/>
-        <text class="th" x="603" y="38" text-anchor="middle" dominant-baseline="central">Tableau BI</text>
-        <text class="ts" x="603" y="56" text-anchor="middle" dominant-baseline="central">Visual Analytics</text>
-        <text class="ts" x="603" y="74" text-anchor="middle" dominant-baseline="central">Business Impact</text>
-      </g>
-
-      <g class="c-gray">
-        <rect class="inner" x="15" y="108" width="650" height="34" rx="6"/>
-        <text class="ts" x="340" y="125" text-anchor="middle" dominant-baseline="central">End-to-End Ownership: 5 Years at Infosys delivering data solutions from raw sources to C-suite reporting</text>
-      </g>
-    </svg>
+<section class="view" id="v3">
+  <h2>Separation of storage and compute</h2>
+  <p class="sub">Switch views and try the scenarios.</p>
+  <div class="row" style="margin-top:0">
+    <button class="btn" id="archOld">Traditional warehouse</button>
+    <button class="btn" id="archNew">Snowflake</button>
   </div>
-
-  <!-- 3. Dual-Specialization Deep Dive -->
-  <h3 style="margin-top:24px">3 &middot; Dual-specialization interview talking points</h3>
-  <p class="sub">How to articulate your value on both sides of the modern data stack.</p>
-
-  <div class="cols2" style="margin-top:10px">
-    <div class="card">
-      <div class="tag" style="background:var(--teal-f);color:var(--teal-t1);font-weight:500">Snowflake Developer Focus</div>
-      <h3 style="margin: 6px 0 6px; font-size:14.5px;">Data Engineering &amp; Warehouse Architecture</h3>
-      <ul id="profSfList" style="padding-left:18px; font-size:13px; line-height:1.6;">
-        <li><b>Scalable Pipelines:</b> Engineered robust ELT flows handling millions of records using Python, DAGKit SDK, and Snowflake SQL.</li>
-        <li><b>Query Optimization:</b> Expert at diagnosing Query Profiles, resolving spilling to local/remote storage, and maximizing partition pruning.</li>
-        <li><b>Transactional Integrity:</b> Designed idempotent <code>DELETE + INSERT</code> patterns with explicit transaction management and session-level auditing.</li>
-        <li><b>Semi-Structured Data:</b> Fluent with <code>VARIANT</code>, dot-path querying, <code>LATERAL FLATTEN</code>, and automated schema evolution.</li>
-      </ul>
-    </div>
-
-    <div class="card">
-      <div class="tag" style="background:var(--coral-f);color:var(--coral-t1);font-weight:500">Tableau Developer Focus</div>
-      <h3 style="margin: 6px 0 6px; font-size:14.5px;">BI, Visualization &amp; Stakeholder Decision-Making</h3>
-      <ul id="profTabList" style="padding-left:18px; font-size:13px; line-height:1.6;">
-        <li><b>Interactive Dashboards:</b> Built enterprise dashboards delivering drill-downs, parameters, and dynamic actions for executive leadership.</li>
-        <li><b>Data Modeling for BI:</b> Crafted optimized star-schema semantic layers and published data sources to ensure sub-second dashboard rendering.</li>
-        <li><b>Complex Calculations:</b> Proficient in Tableau Level of Detail (LOD) expressions (<code>FIXED</code>, <code>INCLUDE</code>, <code>EXCLUDE</code>) and table calculations.</li>
-        <li><b>Cross-Functional Collaboration:</b> Translated ambiguous business KPIs from finance, retail, and ops teams into automated analytical stories.</li>
-      </ul>
-    </div>
-  </div>
-
-  <!-- 4. Profile & Elevator Pitch Flashcards -->
-  <h3 style="margin-top:24px">4 &middot; Candidate profile flashcards</h3>
-  <p class="sub">Practice answering common personal &amp; introductory interview questions.</p>
-  <div class="filters" id="profFilters"></div>
+  <svg id="archSvg" viewBox="0 0 680 380" xmlns="http://www.w3.org/2000/svg" style="margin-top:10px"></svg>
   <div class="row">
-    <label><input type="checkbox" id="profStar"> Most asked only</label>
-    <span class="chip" id="profCount"></span>
-    <button class="btn" id="profQuizStart">Quiz me on these</button>
+    <label><input type="checkbox" id="etlLoad"> ETL team runs a heavy load</label>
+    <label id="suspendWrap"><input type="checkbox" id="biSuspend"> Suspend the BI warehouse</label>
   </div>
-  <div class="panel" id="profQuiz" style="display:none"></div>
-  <div class="grid" id="profFlash"></div>
+  <div class="row" id="sizeRow">
+    <label>ETL warehouse size</label>
+    <input type="range" id="whSize" min="0" max="9" step="1" value="3">
+    <span id="whSizeVal" class="mono"></span>
+  </div>
+  <div class="panel" id="archInfo"></div>
+</section>
+
+<section class="view" id="v2">
+  <h2>Life of a query</h2>
+  <p class="sub">Step through what happens when you run <code>SELECT region, SUM(sales) FROM orders GROUP BY region;</code></p>
+  <svg id="querySvg" viewBox="0 0 680 300" xmlns="http://www.w3.org/2000/svg"></svg>
+  <div class="row">
+    <button class="btn" id="qBack">Back</button>
+    <button class="btn" id="qNext">Next</button>
+    <div class="dots" id="qDots"></div>
+  </div>
+  <div class="panel" id="queryInfo"></div>
+</section>
+
+<section class="view" id="v4">
+  <h2>The three caches</h2>
+  <p class="sub">Press the buttons and watch which cache answers the query.</p>
+  <div class="grid">
+    <div class="card" id="cResult"><h3>Result cache</h3><p>Lives in cloud services. Same query and unchanged data: reused for 24 hours. No warehouse needed.</p></div>
+    <div class="card" id="cLocal"><h3>Local disk cache</h3><p>Lives in the warehouse SSD. Speeds up repeat reads. Lost when it suspends.</p></div>
+    <div class="card" id="cMeta"><h3>Metadata cache</h3><p>Row counts, min and max per micro-partition. COUNT(*), MIN, MAX need no warehouse.</p></div>
+    <div class="card" id="cRemote"><h3>Remote storage</h3><p>No cache helped. Data fetched from cloud storage. Slowest path.</p></div>
+  </div>
+  <div class="row">
+    <button class="btn" id="bRun">Run sales query</button>
+    <button class="btn" id="bCount">Run SELECT COUNT(*)</button>
+    <button class="btn" id="bInsert">Insert new rows</button>
+    <button class="btn" id="bSuspend">Suspend warehouse</button>
+    <button class="btn" id="bReset">Reset</button>
+  </div>
+  <div class="row">
+    <span class="chip" id="sWh"></span><span class="chip" id="sSsd"></span><span class="chip" id="sRes"></span>
+  </div>
+  <div class="panel log" id="cacheLog">Press <b>Run sales query</b> to start.</div>
+</section>
+
+<section class="view" id="v5">
+  <h2>Features the architecture makes possible</h2>
+  <p class="sub">Micro-partitions are never edited in place. A change writes new ones, and metadata remembers the old ones. That single idea powers all four features.</p>
+  <h3>Time Travel and Fail-safe</h3>
+  <svg id="ttSvg" viewBox="0 0 680 150" xmlns="http://www.w3.org/2000/svg"></svg>
+  <div class="row">
+    <label>Retention</label>
+    <select id="ttRet"><option value="1">1 day (default)</option><option value="90">90 days (Enterprise max)</option></select>
+    <label>Days since the table was dropped</label>
+    <input type="range" id="ttDays" min="0" max="18" step="1" value="0">
+    <span id="ttDaysVal" class="mono"></span>
+  </div>
+  <div class="panel" id="ttInfo"></div>
+  <h3 style="margin-top:22px">Zero-copy cloning and secure data sharing</h3>
+  <svg viewBox="0 0 680 230" xmlns="http://www.w3.org/2000/svg">
+    <text class="th" x="180" y="30" text-anchor="middle">Zero-copy clone</text>
+    <text class="th" x="510" y="30" text-anchor="middle">Secure data sharing</text>
+    <g class="c-teal">
+      <rect class="box" x="50" y="48" width="110" height="44" rx="8"/>
+      <text class="th" x="105" y="70" text-anchor="middle" dominant-baseline="central">orders</text>
+      <rect class="box" x="190" y="48" width="120" height="44" rx="8"/>
+      <text class="th" x="250" y="70" text-anchor="middle" dominant-baseline="central">orders_dev</text>
+      <rect class="box" x="370" y="48" width="110" height="44" rx="8"/>
+      <text class="th" x="425" y="70" text-anchor="middle" dominant-baseline="central">Provider</text>
+      <rect class="box" x="510" y="48" width="120" height="44" rx="8"/>
+      <text class="th" x="570" y="70" text-anchor="middle" dominant-baseline="central">Consumer</text>
+    </g>
+    <line class="arr" x1="105" y1="92" x2="165" y2="136" marker-end="url(#arr2)"/>
+    <line class="arr" x1="250" y1="92" x2="190" y2="136" marker-end="url(#arr2)"/>
+    <line class="arr" x1="425" y1="92" x2="500" y2="136" marker-end="url(#arr2)"/>
+    <line class="arr" x1="570" y1="92" x2="525" y2="136" marker-end="url(#arr2)"/>
+    <g class="c-coral" id="cloneSquares"></g>
+    <text class="ts" x="180" y="196" text-anchor="middle">Copies metadata only<tspan x="180" dy="1.3em">pays storage only for changes</tspan></text>
+    <text class="ts" x="510" y="196" text-anchor="middle">No data is copied<tspan x="510" dy="1.3em">consumer uses its own warehouse</tspan></text>
+  </svg>
+</section>
+
+<section class="view" id="v7">
+  <h2>Interview topics from the article</h2>
+  <p class="sub">Every article question that tabs 1–5 don't already explain. Pick a group, then a topic. An amber dot means the article's answer is wrong or out of date, and the topic shows the correct version.</p>
+  <div class="row" style="margin:0 0 12px"><label>Jump to article question</label><select id="qJump"></select></div>
+  <div class="tabs subtabs" id="grpBar"></div>
+  <div class="topicbar" id="topicBar"></div>
+  <div id="topicPanel"></div>
+</section>
+
+<section class="view" id="v8">
+  <h2>SQL interview cheat sheet</h2>
+  <p class="sub">The most-asked SQL interview topics. Your own mistakes from our practice come first, so you don't repeat them in the interview.</p>
+
+  <h3>1 · Your mistakes from our practice</h3>
+  <p class="sub">Every slip from Questions 1–6, with the fix and the rule to remember.</p>
+  <div id="sqlMistakes"></div>
+
+  <h3 style="margin-top:22px">2 · Order of execution</h3>
+  <p class="sub">You write <code>SELECT</code> first, but the database runs it almost last. This one picture explains most "why doesn't this work?" questions.</p>
+  <div id="execOrder"></div>
+
+  <h3 style="margin-top:22px">3 · SQL joins, one dataset at a time</h3>
+  <p class="sub">Interactive visual breakdown across Standard, Filtering, Special, and Snowflake-native join types.</p>
+  <div id="joinDemo"></div>
+
+  <h3 style="margin-top:22px">4 · ROW_NUMBER vs RANK vs DENSE_RANK</h3>
+  <p class="sub">The Question 1 salaries. Highlighted cells show where the three functions differ.</p>
+  <div id="rankDemo"></div>
+
+  <h3 style="margin-top:22px">5 · Pattern library</h3>
+  <p class="sub">Ready-to-use answers to the classic interview problems. Pick one.</p>
+  <div id="patDemo"></div>
+
+  <h3 style="margin-top:22px">6 · NULL traps</h3>
+  <div id="nullTraps"></div>
+
+  <h3 style="margin-top:22px">7 · SQL interview flashcards</h3>
+  <p class="sub">"Your mistakes" cards come first, and the quiz always asks them first. Answer out loud, then click.</p>
+  <div class="filters" id="sqlFilters"></div>
+  <div class="row">
+    <label><input type="checkbox" id="sqlStar"> Most asked only</label>
+    <span class="chip" id="sqlCount"></span>
+    <button class="btn" id="sqlQuizStart">Quiz me on these</button>
+  </div>
+  <div class="panel" id="sqlQuiz" style="display:none"></div>
+  <div class="grid" id="sqlFlash"></div>
+</section>
+
+<section class="view" id="v6">
+  <h2>Cheat sheet</h2>
+  <h3>Memory tricks</h3>
+  <table>
+    <tr><th>Remember</th><th>Means</th></tr>
+    <tr><td><b>Brain, muscle, pantry</b></td><td>Cloud services, compute (warehouses), storage</td></tr>
+    <tr><td><b>Scale up vs scale out</b></td><td>Up = bigger size for heavy queries. Out = more clusters for many users.</td></tr>
+    <tr><td><b>Caches: R, L, M</b></td><td>Result (24h, no warehouse), Local SSD (lost on suspend), Metadata (COUNT/MIN/MAX)</td></tr>
+    <tr><td><b>Suspend = no compute bill</b></td><td>Data stays safe in storage. Billing is per second, 60-second minimum.</td></tr>
+    <tr><td><b>Immutable micro-partitions</b></td><td>Enable pruning, Time Travel, Fail-safe, cloning, and sharing</td></tr>
+    <tr><td><b>Hybrid design</b></td><td>Shared-disk storage + shared-nothing (MPP) compute</td></tr>
+    <tr><td><b>Stage → COPY → table</b></td><td>PUT files into an internal stage (or point at a bucket), COPY INTO loads them. Snowpipe runs the COPY for you.</td></tr>
+    <tr><td><b>Fail-safe days 7 · 0 · 0</b></td><td>Permanent 7, transient 0, temporary 0. Only permanent tables get up to 90 days of Time Travel.</td></tr>
+    <tr><td><b>Stream = bookmark, task = alarm clock</b></td><td>A stream remembers what changed. A task runs SQL on a schedule, often reading the stream.</td></tr>
+    <tr><td><b>Prune before you pay</b></td><td>Check partitions scanned and spilling in Query Profile before buying a bigger warehouse.</td></tr>
+    <tr><td><b>Roles get privileges, users get roles</b></td><td>And you need USAGE on warehouse, database and schema before SELECT works.</td></tr>
+    <tr><td><b>Share = grants, not copies</b></td><td>Consumers read live data with their own warehouse. Only secure views can be shared.</td></tr>
+    <tr><td><b>Notify → suspend → suspend now</b></td><td>The three resource monitor actions</td></tr>
+    <tr><td><b>Editions S · E · B · V</b></td><td>Standard, Enterprise (scale + governance), Business Critical (compliance + failover), VPS (isolated)</td></tr>
+  </table>
+  <h3 style="margin-top:22px">Article answers to correct</h3>
+  <p class="sub">If an interviewer asks one of these, give the corrected answer.</p>
+  <div id="fixTable"></div>
+  <h3 style="margin-top:22px">Interview flashcards</h3>
+  <p class="sub">"Article traps" cards come first: the questions the article gets wrong. The quiz always asks them first too. Answer out loud, then click a card.</p>
+  <div class="filters" id="flashFilters"></div>
+  <div class="row">
+    <label><input type="checkbox" id="starOnly"> Most asked only</label>
+    <span class="chip" id="flashCount"></span>
+    <button class="btn" id="quizStart">Quiz me on these</button>
+  </div>
+  <div class="panel" id="quiz" style="display:none"></div>
+  <div class="grid" id="flash"></div>
 </section>
 
 <script>
@@ -1858,7 +1851,15 @@ const TOPICS = [
 /* ---------- Topics engine ---------- */
 const byId = Object.fromEntries(TOPICS.map(t => [t.id, t]));
 const EARLIER = { 1: 'v1', 2: 'v1', 3: 'v5', 4: 'v3', 5: 'v1', 8: 'v5', 11: 'v4', 21: 'v1', 22: 'v5', 23: 'v5', 26: 'v5', 34: 'v3', 36: 'v1', 37: 'v1', 42: 'v5', 48: 'v4' };
-const TABNAME = { v1: 'Tab 1 · Three layers', v3: 'Tab 3 · Storage vs compute', v4: 'Tab 4 · Caches', v5: 'Tab 5 · Features' };
+const TABNAME = {
+  v10: 'Tab 1 · Profile & elevator pitch',
+  v9:  'Tab 2 · Pipeline flow',
+  v1:  'Tab 3 · Three layers & storage',
+  v3:  'Tab 4 · Storage vs compute',
+  v2:  'Tab 5 · Life of a query',
+  v4:  'Tab 6 · The three caches',
+  v5:  'Tab 7 · Core features'
+};
 function showTopic(id) {
   const t = byId[id];
   document.getElementById('grpBar').innerHTML = GROUPS.map((g, i) => `<button class="${i === t.g ? 'on' : ''}" data-g="${i}">${g}</button>`).join('');
