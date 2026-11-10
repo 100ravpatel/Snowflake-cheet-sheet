@@ -362,8 +362,8 @@
   <p class="sub">You write <code>SELECT</code> first, but the database runs it almost last. This one picture explains most "why doesn't this work?" questions.</p>
   <div id="execOrder"></div>
 
-  <h3 style="margin-top:22px">3 · Joins: try each type</h3>
-  <p class="sub">The same customers and orders as Question 3, plus order 105 for a customer who doesn't exist. Pick a join.</p>
+  <h3 style="margin-top:22px">3 · SQL joins, one dataset at a time</h3>
+  <p class="sub">Interactive visual breakdown across Standard, Filtering, Special, and Snowflake-native join types.</p>
   <div id="joinDemo"></div>
 
   <h3 style="margin-top:22px">4 · ROW_NUMBER vs RANK vs DENSE_RANK</h3>
@@ -455,7 +455,7 @@
       <h3 style="margin: 6px 0 4px; font-size: 14.5px;">Custom Orchestration with DAGKit</h3>
       <p style="margin-bottom:8px">Each pipeline is instantiated as a <code>Job</code> object. Individual processing steps are decorated Python functions called nodes. The framework automatically manages connection pooling, variable passing, and contextual dependencies.</p>
       <pre class="code"># How you define a job and a node
-job = Job("JOB_NAME")
+job = Job("DAILY_STORE_METRIC_RECAP_JOB")
 
 @job.node("Set_Variables", "execute")
 def f(job_context: JobContext, node_context: NodeContext, exec_context: ExecutionContext):
@@ -2080,45 +2080,310 @@ document.getElementById('sqlMistakes').innerHTML = `<table><tr><th>Where</th><th
 })();
 
 (function joinDemo() {
-  const C = [[1, 'Ravi'], [2, 'Meena'], [3, 'John'], [4, 'Priya']];
-  const O = [[101, 1, 250], [102, 1, 100], [103, 3, 400], [104, null, 50], [105, 9, 75]];
-  const N = '<span class="mini">NULL</span>';
-  const SQL = {
-    inner: 'SELECT c.customer_id, c.name, o.order_id, o.amount\nFROM customers c\nJOIN orders o ON c.customer_id = o.customer_id;',
-    left: 'SELECT c.customer_id, c.name, o.order_id, o.amount\nFROM customers c\nLEFT JOIN orders o ON c.customer_id = o.customer_id;',
-    right: 'SELECT c.customer_id, c.name, o.order_id, o.amount\nFROM customers c\nRIGHT JOIN orders o ON c.customer_id = o.customer_id;',
-    full: 'SELECT c.customer_id, c.name, o.order_id, o.amount\nFROM customers c\nFULL OUTER JOIN orders o ON c.customer_id = o.customer_id;',
-    anti: 'SELECT c.customer_id, c.name\nFROM customers c\nWHERE NOT EXISTS (SELECT 1 FROM orders o WHERE o.customer_id = c.customer_id);',
-    semi: 'SELECT c.customer_id, c.name\nFROM customers c\nWHERE EXISTS (SELECT 1 FROM orders o WHERE o.customer_id = c.customer_id);'
+  const C = [
+    { cust_id: 1, name: 'Asha', region: 'West' },
+    { cust_id: 2, name: 'Ben', region: 'East' },
+    { cust_id: 3, name: 'Chen', region: 'West' },
+    { cust_id: 4, name: 'Dara', region: 'North' }
+  ];
+
+  const O = [
+    { order_id: 101, cust_id: 1, amount: 120 },
+    { order_id: 102, cust_id: 1, amount: 85 },
+    { order_id: 103, cust_id: 3, amount: 240 },
+    { order_id: 104, cust_id: 5, amount: 60 }
+  ];
+
+  const JOINS = {
+    inner: {
+      category: 'Standard',
+      name: 'INNER join',
+      desc: 'Only rows that match on both sides. Asha appears twice because she has two orders.',
+      sql: `SELECT c.cust_id, c.name, o.order_id, o.cust_id, o.amount\nFROM customers c\nINNER JOIN orders o ON c.cust_id = o.cust_id;`,
+      leftUsed: [1, 3],
+      rightUsed: [101, 102, 103],
+      cols: ['c.cust_id', 'c.name', 'o.order_id', 'o.cust_id', 'o.amount'],
+      rows: [
+        [1, 'Asha', 101, 1, 120],
+        [1, 'Asha', 102, 1, 85],
+        [3, 'Chen', 103, 3, 240]
+      ],
+      venn: `<svg width="44" height="24" viewBox="0 0 44 24"><circle cx="16" cy="12" r="10" fill="none" stroke="currentColor" stroke-width="1.5"/><circle cx="28" cy="12" r="10" fill="none" stroke="currentColor" stroke-width="1.5"/><path d="M 22 4.2 A 10 10 0 0 1 22 19.8 A 10 10 0 0 1 22 4.2" fill="var(--teal-s)" opacity="0.85"/></svg>`
+    },
+    left: {
+      category: 'Standard',
+      name: 'LEFT join',
+      desc: 'All rows from the left table are kept. Unmatched rows from the right table are padded with NULLs.',
+      sql: `SELECT c.cust_id, c.name, o.order_id, o.cust_id, o.amount\nFROM customers c\nLEFT JOIN orders o ON c.cust_id = o.cust_id;`,
+      leftUsed: [1, 2, 3, 4],
+      rightUsed: [101, 102, 103],
+      cols: ['c.cust_id', 'c.name', 'o.order_id', 'o.cust_id', 'o.amount'],
+      rows: [
+        [1, 'Asha', 101, 1, 120],
+        [1, 'Asha', 102, 1, 85],
+        [2, 'Ben', 'NULL', 'NULL', 'NULL'],
+        [3, 'Chen', 103, 3, 240],
+        [4, 'Dara', 'NULL', 'NULL', 'NULL']
+      ],
+      venn: `<svg width="44" height="24" viewBox="0 0 44 24"><circle cx="16" cy="12" r="10" fill="var(--teal-s)" opacity="0.85"/><circle cx="28" cy="12" r="10" fill="none" stroke="currentColor" stroke-width="1.5"/><circle cx="16" cy="12" r="10" fill="none" stroke="currentColor" stroke-width="1.5"/></svg>`
+    },
+    right: {
+      category: 'Standard',
+      name: 'RIGHT join',
+      desc: 'All rows from the right table are kept. Order 104 (cust_id 5) has no matching customer, so customer fields are NULL.',
+      sql: `SELECT c.cust_id, c.name, o.order_id, o.cust_id, o.amount\nFROM customers c\nRIGHT JOIN orders o ON c.cust_id = o.cust_id;`,
+      leftUsed: [1, 3],
+      rightUsed: [101, 102, 103, 104],
+      cols: ['c.cust_id', 'c.name', 'o.order_id', 'o.cust_id', 'o.amount'],
+      rows: [
+        [1, 'Asha', 101, 1, 120],
+        [1, 'Asha', 102, 1, 85],
+        [3, 'Chen', 103, 3, 240],
+        ['NULL', 'NULL', 104, 5, 60]
+      ],
+      venn: `<svg width="44" height="24" viewBox="0 0 44 24"><circle cx="28" cy="12" r="10" fill="var(--teal-s)" opacity="0.85"/><circle cx="16" cy="12" r="10" fill="none" stroke="currentColor" stroke-width="1.5"/><circle cx="28" cy="12" r="10" fill="none" stroke="currentColor" stroke-width="1.5"/></svg>`
+    },
+    full: {
+      category: 'Standard',
+      name: 'FULL OUTER join',
+      desc: 'Everything from both sides. Unmatched rows on either side are padded with NULLs.',
+      sql: `SELECT c.cust_id, c.name, o.order_id, o.cust_id, o.amount\nFROM customers c\nFULL OUTER JOIN orders o ON c.cust_id = o.cust_id;`,
+      leftUsed: [1, 2, 3, 4],
+      rightUsed: [101, 102, 103, 104],
+      cols: ['c.cust_id', 'c.name', 'o.order_id', 'o.cust_id', 'o.amount'],
+      rows: [
+        [1, 'Asha', 101, 1, 120],
+        [1, 'Asha', 102, 1, 85],
+        [2, 'Ben', 'NULL', 'NULL', 'NULL'],
+        [3, 'Chen', 103, 3, 240],
+        [4, 'Dara', 'NULL', 'NULL', 'NULL'],
+        ['NULL', 'NULL', 104, 5, 60]
+      ],
+      venn: `<svg width="44" height="24" viewBox="0 0 44 24"><circle cx="16" cy="12" r="10" fill="var(--teal-s)" opacity="0.85"/><circle cx="28" cy="12" r="10" fill="var(--teal-s)" opacity="0.85"/><circle cx="16" cy="12" r="10" fill="none" stroke="currentColor" stroke-width="1.5"/><circle cx="28" cy="12" r="10" fill="none" stroke="currentColor" stroke-width="1.5"/></svg>`
+    },
+    semi: {
+      category: 'Filtering',
+      name: 'SEMI join (EXISTS)',
+      desc: 'Returns each customer who placed at least one order. Unlike INNER JOIN, rows are not duplicated (Asha appears once).',
+      sql: `SELECT c.cust_id, c.name, c.region\nFROM customers c\nWHERE EXISTS (\n  SELECT 1 FROM orders o WHERE o.cust_id = c.cust_id\n);`,
+      leftUsed: [1, 3],
+      rightUsed: [101, 102, 103],
+      cols: ['c.cust_id', 'c.name', 'c.region'],
+      rows: [
+        [1, 'Asha', 'West'],
+        [3, 'Chen', 'West']
+      ],
+      venn: `<svg width="44" height="24" viewBox="0 0 44 24"><circle cx="16" cy="12" r="10" fill="var(--teal-s)" opacity="0.85"/><circle cx="28" cy="12" r="10" fill="none" stroke="currentColor" stroke-width="1.5" stroke-dasharray="2 2"/></svg>`
+    },
+    anti: {
+      category: 'Filtering',
+      name: 'ANTI join (NOT EXISTS)',
+      desc: 'Returns each customer who has zero orders (Ben and Dara). Safe against NULL customer IDs on the right side.',
+      sql: `SELECT c.cust_id, c.name, c.region\nFROM customers c\nWHERE NOT EXISTS (\n  SELECT 1 FROM orders o WHERE o.cust_id = c.cust_id\n);`,
+      leftUsed: [2, 4],
+      rightUsed: [],
+      cols: ['c.cust_id', 'c.name', 'c.region'],
+      rows: [
+        [2, 'Ben', 'East'],
+        [4, 'Dara', 'North']
+      ],
+      venn: `<svg width="44" height="24" viewBox="0 0 44 24"><circle cx="16" cy="12" r="10" fill="var(--amber-s)" opacity="0.85"/><circle cx="28" cy="12" r="10" fill="var(--bg-primary)" stroke="currentColor" stroke-width="1.5"/></svg>`
+    },
+    cross: {
+      category: 'Special',
+      name: 'CROSS join',
+      desc: 'Cartesian product: pairs every customer with every order (4 customers × 4 orders = 16 rows). No ON condition.',
+      sql: `SELECT c.cust_id, c.name, o.order_id, o.amount\nFROM customers c\nCROSS JOIN orders o;`,
+      leftUsed: [1, 2, 3, 4],
+      rightUsed: [101, 102, 103, 104],
+      cols: ['c.cust_id', 'c.name', 'o.order_id', 'o.amount'],
+      rows: [
+        [1, 'Asha', 101, 120], [1, 'Asha', 102, 85], [1, 'Asha', 103, 240], [1, 'Asha', 104, 60],
+        [2, 'Ben', 101, 120],  [2, 'Ben', 102, 85],  [2, 'Ben', 103, 240],  [2, 'Ben', 104, 60],
+        [3, 'Chen', 101, 120], [3, 'Chen', 102, 85], [3, 'Chen', 103, 240], [3, 'Chen', 104, 60],
+        [4, 'Dara', 101, 120], [4, 'Dara', 102, 85], [4, 'Dara', 103, 240], [4, 'Dara', 104, 60]
+      ],
+      venn: `<svg width="44" height="24" viewBox="0 0 44 24"><rect x="4" y="4" width="36" height="16" rx="3" fill="var(--purple-f)" stroke="var(--purple-s)" stroke-width="1.5"/></svg>`
+    },
+    self: {
+      category: 'Special',
+      name: 'SELF join',
+      desc: 'A table joined to itself. Finds pairs of customers located in the same geographic region (Asha and Chen in West).',
+      sql: `SELECT a.name AS cust_a, b.name AS cust_b, a.region\nFROM customers a\nJOIN customers b ON a.region = b.region AND a.cust_id < b.cust_id;`,
+      leftUsed: [1, 3],
+      rightUsed: [1, 3],
+      cols: ['cust_a', 'cust_b', 'region'],
+      rows: [
+        ['Asha', 'Chen', 'West']
+      ],
+      venn: `<svg width="44" height="24" viewBox="0 0 44 24"><circle cx="22" cy="12" r="10" fill="var(--teal-f)" stroke="var(--teal-s)" stroke-width="1.5"/></svg>`
+    },
+    natural: {
+      category: 'Special',
+      name: 'NATURAL join',
+      desc: 'Implicitly joins on all columns sharing the exact same name (cust_id). Equivalent to INNER JOIN ON c.cust_id = o.cust_id.',
+      sql: `SELECT cust_id, c.name, o.order_id, o.amount\nFROM customers c\nNATURAL JOIN orders o;`,
+      leftUsed: [1, 3],
+      rightUsed: [101, 102, 103],
+      cols: ['cust_id', 'c.name', 'o.order_id', 'o.amount'],
+      rows: [
+        [1, 'Asha', 101, 120],
+        [1, 'Asha', 102, 85],
+        [3, 'Chen', 103, 240]
+      ],
+      venn: `<svg width="44" height="24" viewBox="0 0 44 24"><circle cx="16" cy="12" r="10" fill="none" stroke="currentColor" stroke-width="1.5"/><circle cx="28" cy="12" r="10" fill="none" stroke="currentColor" stroke-width="1.5"/><path d="M 22 4.2 A 10 10 0 0 1 22 19.8 A 10 10 0 0 1 22 4.2" fill="var(--teal-s)" opacity="0.85"/></svg>`
+    },
+    asof: {
+      category: 'Snowflake',
+      name: 'ASOF join (Snowflake)',
+      desc: 'Aligns time-series records: pairs each left row with the closest prior or matching right timestamp/sequence.',
+      sql: `SELECT c.cust_id, c.name, o.order_id, o.amount\nFROM customers c\nASOF JOIN orders o\n  MATCH_CONDITION (c.cust_id = o.cust_id AND c.effective_dt >= o.order_dt);`,
+      leftUsed: [1, 3],
+      rightUsed: [101, 102, 103],
+      cols: ['c.cust_id', 'c.name', 'o.order_id', 'o.amount'],
+      rows: [
+        [1, 'Asha', 102, 85],
+        [3, 'Chen', 103, 240]
+      ],
+      venn: `<svg width="44" height="24" viewBox="0 0 44 24"><circle cx="16" cy="12" r="10" fill="none" stroke="currentColor" stroke-width="1.5"/><circle cx="28" cy="12" r="10" fill="none" stroke="currentColor" stroke-width="1.5"/><line x1="6" y1="12" x2="38" y2="12" stroke="var(--teal-s)" stroke-width="2" marker-end="url(#arr2)"/></svg>`
+    },
+    lateral: {
+      category: 'Snowflake',
+      name: 'LATERAL join (Snowflake)',
+      desc: 'Correlated join: allows the right-hand inline query or LATERAL FLATTEN() to reference columns from the preceding left row.',
+      sql: `SELECT c.cust_id, c.name, o.order_id, o.amount\nFROM customers c,\nLATERAL (\n  SELECT order_id, amount FROM orders o WHERE o.cust_id = c.cust_id\n) o;`,
+      leftUsed: [1, 3],
+      rightUsed: [101, 102, 103],
+      cols: ['c.cust_id', 'c.name', 'o.order_id', 'o.amount'],
+      rows: [
+        [1, 'Asha', 101, 120],
+        [1, 'Asha', 102, 85],
+        [3, 'Chen', 103, 240]
+      ],
+      venn: `<svg width="44" height="24" viewBox="0 0 44 24"><circle cx="16" cy="12" r="10" fill="var(--purple-f)" stroke="var(--purple-s)" stroke-width="1.5"/><path d="M 26 12 L 36 12" stroke="var(--teal-s)" stroke-width="2" marker-end="url(#arr2)"/></svg>`
+    }
   };
-  const NOTE = {
-    inner: 'Only matching pairs. Ravi appears twice because he has two orders: joins multiply rows. Orders 104 and 105 have no matching customer, so they disappear.',
-    left: 'Every customer is kept. Meena and Priya have no orders, so their order columns are NULL.',
-    right: 'Every order is kept. Orders 104 (NULL customer) and 105 (customer 9 doesn\'t exist) get NULL customer columns.',
-    full: 'Everything from both sides: matches, customers with no orders, and orders with no customer.',
-    anti: 'Customers with no orders (Question 3). NOT EXISTS is safe even when orders.customer_id contains NULL.',
-    semi: 'Customers with at least one order. Each customer appears once, even Ravi with two orders, unlike an INNER JOIN.'
-  };
-  let k = 'inner';
-  function rows() {
-    const m = c => O.filter(o => o[1] === c[0]);
-    if (k === 'anti') return C.filter(c => !m(c).length).map(c => [c[0], c[1]]);
-    if (k === 'semi') return C.filter(c => m(c).length).map(c => [c[0], c[1]]);
-    const out = [];
-    if (k !== 'right') C.forEach(c => { const ms = m(c); if (ms.length) ms.forEach(o => out.push([c[0], c[1], o[0], o[2]])); else if (k !== 'inner') out.push([c[0], c[1], N, N]); });
-    if (k === 'right') O.forEach(o => { const c = C.find(c => c[0] === o[1]); out.push(c ? [c[0], c[1], o[0], o[2]] : [N, N, o[0], o[2]]); });
-    if (k === 'full') O.filter(o => !C.some(c => c[0] === o[1])).forEach(o => out.push([N, N, o[0], o[2]]));
-    return out;
+
+  let activeKey = 'inner';
+
+  function render() {
+    const el = document.getElementById('joinDemo');
+    if (!el) return;
+    const j = JOINS[activeKey];
+
+    const catGroups = [
+      { label: 'Standard', keys: ['inner', 'left', 'right', 'full'] },
+      { label: 'Filtering', keys: ['semi', 'anti'] },
+      { label: 'Special', keys: ['cross', 'self', 'natural'] },
+      { label: 'Snowflake', keys: ['asof', 'lateral'] }
+    ];
+
+    let catNavHtml = `<div style="display:flex; flex-direction:column; gap:8px; margin-bottom:14px;">`;
+    catGroups.forEach(g => {
+      catNavHtml += `
+        <div style="display:flex; align-items:center; gap:8px; flex-wrap:wrap;">
+          <span style="font-size:11.5px; font-weight:600; min-width:76px; color:var(--text-secondary);">${g.label}:</span>
+          <div style="display:flex; gap:6px; flex-wrap:wrap;">
+            ${g.keys.map(k => {
+              const label = k === 'semi' ? 'SEMI (EXISTS)' :
+                            k === 'anti' ? 'ANTI (NOT EXISTS)' :
+                            k === 'full' ? 'FULL OUTER' : k.toUpperCase();
+              return `<button class="btn${k === activeKey ? ' on' : ''}" data-jkey="${k}" style="padding:3px 9px; font-size:12px;">${label}</button>`;
+            }).join('')}
+          </div>
+        </div>
+      `;
+    });
+    catNavHtml += `</div>`;
+
+    const leftRowsHtml = C.map(c => {
+      const isUsed = j.leftUsed.includes(c.cust_id);
+      const bg = isUsed ? 'background:var(--teal-f); color:var(--teal-t1);' : 'opacity:0.4; text-decoration:line-through;';
+      return `<tr style="${bg}">
+        <td style="padding:4px 8px; font-weight:600;">${c.cust_id}</td>
+        <td style="padding:4px 8px;">${c.name}</td>
+        <td style="padding:4px 8px;">${c.region}</td>
+      </tr>`;
+    }).join('');
+
+    const rightRowsHtml = O.map(o => {
+      const isUsed = j.rightUsed.includes(o.order_id);
+      const bg = isUsed ? 'background:var(--amber-f); color:var(--amber-t1);' : 'opacity:0.4; text-decoration:line-through;';
+      return `<tr style="${bg}">
+        <td style="padding:4px 8px; font-weight:600;">${o.order_id}</td>
+        <td style="padding:4px 8px;">${o.cust_id}</td>
+        <td style="padding:4px 8px;">${o.amount}</td>
+      </tr>`;
+    }).join('');
+
+    const outTableHtml = `
+      <div style="font-size:12px; font-weight:600; margin-bottom:4px;">Result: ${j.rows.length} rows</div>
+      <table>
+        <thead>
+          <tr>${j.cols.map(c => `<th>${c}</th>`).join('')}</tr>
+        </thead>
+        <tbody>
+          ${j.rows.map(r => `<tr>${r.map(val => `<td${val === 'NULL' ? ' class="strike"' : ''}>${val}</td>`).join('')}</tr>`).join('')}
+        </tbody>
+      </table>
+    `;
+
+    el.innerHTML = `
+      ${catNavHtml}
+
+      <div class="card" style="margin-bottom:14px; background:var(--bg-secondary);">
+        <div style="display:flex; align-items:center; justify-content:space-between; margin-bottom:4px;">
+          <h3 style="margin:0; font-size:15px; display:inline-flex; align-items:center; gap:8px;">
+            ${j.name} ${j.venn}
+          </h3>
+        </div>
+        <p style="margin:0; font-size:13px; color:var(--text-secondary);">${j.desc}</p>
+      </div>
+
+      <div style="margin-bottom:14px;">
+        <div class="cols2">
+          <div>
+            <div style="font-size:11.5px; font-weight:600; color:var(--text-secondary); margin-bottom:4px;">customers (left)</div>
+            <table>
+              <thead><tr><th>cust_id</th><th>name</th><th>region</th></tr></thead>
+              <tbody>${leftRowsHtml}</tbody>
+            </table>
+          </div>
+          <div>
+            <div style="font-size:11.5px; font-weight:600; color:var(--text-secondary); margin-bottom:4px;">orders (right)</div>
+            <table>
+              <thead><tr><th>order_id</th><th>cust_id</th><th>amount</th></tr></thead>
+              <tbody>${rightRowsHtml}</tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+
+      <div class="row" style="margin:6px 0 14px; font-size:11.5px; gap:14px; color:var(--text-secondary);">
+        <span style="display:inline-flex; align-items:center; gap:4px;"><span style="width:10px; height:10px; border-radius:2px; background:var(--teal-f); border:1px solid var(--teal-s);"></span> left row in result</span>
+        <span style="display:inline-flex; align-items:center; gap:4px;"><span style="width:10px; height:10px; border-radius:2px; background:var(--amber-f); border:1px solid var(--amber-s);"></span> right row used</span>
+        <span style="display:inline-flex; align-items:center; gap:4px;"><span style="width:10px; height:10px; border-radius:2px; background:var(--bg-tertiary); border:1px solid var(--border-secondary);"></span> dropped</span>
+      </div>
+
+      <div class="cols2">
+        <div>
+          <pre class="code" style="margin:0; min-height:100%;">${j.sql.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;')}</pre>
+        </div>
+        <div>
+          ${outTableHtml}
+        </div>
+      </div>
+    `;
+
+    el.querySelectorAll('[data-jkey]').forEach(btn => {
+      btn.addEventListener('click', () => {
+        activeKey = btn.dataset.jkey;
+        render();
+      });
+    });
   }
-  function draw() {
-    const r = rows(), short = k === 'anti' || k === 'semi';
-    document.getElementById('joinDemo').innerHTML =
-      seg('j', k, [['inner', 'INNER'], ['left', 'LEFT'], ['right', 'RIGHT'], ['full', 'FULL OUTER'], ['anti', 'Anti (NOT EXISTS)'], ['semi', 'Semi (EXISTS)']]) +
-      `<div class="cols2"><div>${code(SQL[k])}<p class="mini">${NOTE[k]}</p></div><div><div class="mini">Result: ${r.length} rows</div>` +
-      tbl(short ? ['customer_id', 'name'] : ['customer_id', 'name', 'order_id', 'amount'], r) + `</div></div>`;
-    document.querySelectorAll('#joinDemo [data-act]').forEach(b => b.addEventListener('click', () => { k = b.dataset.act.split(':')[1]; draw(); }));
-  }
-  draw();
+
+  render();
 })();
 
 (function rankDemo() {
